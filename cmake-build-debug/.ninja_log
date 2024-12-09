@@ -1,0 +1,6 @@
+# ninja log v6
+17	874	1733030027450292313	CMakeFiles/projetSystemeComplet.dir/client.c.o	46a835d80cc829b4
+14	866	1733030027447257951	CMakeFiles/projetSystemeComplet.dir/main.c.o	994944a31e5b6e7f
+6	549	1733015966905024609	CMakeFiles/projetSystemeComplet.dir/Serveur.c.o	f804da4d07fdaf02
+7	269	1733495732428455154	build.ninja	1042794ac61dbdeb
+17	874	1733030027449806246	CMakeFiles/projetSystemeComplet.dir/serveur.c.o	28e70a9b109cc689
