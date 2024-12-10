@@ -1,72 +1,90 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 #include <unistd.h>
 #include <arpa/inet.h>
 #include <sys/socket.h>
-#include <pthread.h>
+#include <sys/ipc.h>
+#include <sys/shm.h>
+#include <sys/sem.h>
+#include <sys/wait.h>
+#include <sys/time.h>
+#include <string.h>
 
-#define IP_ADRESSE_INTERFACE_SERVEUR "192.168.56.1"  // Adresse IP du serveur 127.0.0.1
-#define PORT 8080  // Le port sur lequel le serveur écoute
+#define ADRESSE_IP_INTERFACE_SERVEUR "127.0.0.1"  // Adresse IP du serveur
 #define MAX_CLIENTS 10  // Le nombre maximum de clients dans la file d'attente
-#define ARRAY_SIZE (1<<28)  // Taille du tableau du serveur (2^28 éléments)
-#define CHUNK_SIZE 1024  // Taille du bloc pour la réception (1024 octets)
-#define
-double moyenne=0;
-long long maxOccurence=0;
-long long minOccurence=0;
+#define PORT 8080  // Le port sur lequel le serveur écoute
+#define TAILLE_TABLEAU (1<<28)  // Taille du tableau à envoyer (2^28 éléments)
+#define NBR_PROCESSUS 6         // Nombre de processus
+#define NBR_CYCLES 10             // Nombre de cycles
+#define NBR_RANDOMS (1000000000L) // Nombres aléatoires par cycle (10 milliard)
+#define SHM_KEY 0x12345          // Clé pour la mémoire partagée
+#define K 1024        // Taille d'un bloc pour le pliage (pour generer le csv Index,Occurence avoir une allure de la courbe )
+
+//long long nbr_cases_theorique  = 4800000000000LL;
+long long nbr_cases_theorique  = 240000000000LL;  // Nombre de case theorique pour calculer la moyenne (MaxO - Min0) 2400 milliard
+
+struct sembuf bloquer_semaphore = {0, -1, 0};   // Décrémenter sémaphore (verrouiller)
+struct sembuf debloquer_semaphore = {0, 1, 0}; // Incrémenter sémaphore (déverrouiller)
+
+double moyenne=0; // Moyenne (Max - Min) / NBR_CASES
+long long maxOccurence=0; // l'occurence la plus grande
+long long minOccurence=0; // l'occurence la plus petite
+
+int nbrClientPrevus=5;
+int nbrClientTotalTraiter=0;
 
 
-long long find_max(int *data, int data_size) {
-    long long max_value = data[0];  // Initialiser max_value avec le premier élément du tableau
+// FONCTIONS UTILISES
 
-    for (int i = 1; i < data_size; i++) {
-        if (data[i] > max_value) {
-            max_value = data[i];
-        }
+// Fonction pour générer les nombres aléatoires et synchroniser
+void generer_randoms(int process_id, int *tableau_IPC, int sem_id) {
+    int *tableau_local = malloc(TAILLE_TABLEAU * sizeof(int));
+    if (tableau_local == NULL) {
+        perror("Erreur d'allocation mémoire pour le tableau local");
+        exit(1);
     }
 
-    return max_value;
-}
+    memset(tableau_local, 0, TAILLE_TABLEAU * sizeof(int));
 
-long long find_min(int *data, int data_size) {
-    long long min_value = data[0];  // Initialiser min_value avec le premier élément du tableau
+    struct timeval start, end;
+    gettimeofday(&start, NULL);
 
-    for (int i = 1; i < data_size; i++) {
-        if (data[i] < min_value) {
-            min_value = data[i];
+    for (int j = 0; j < NBR_CYCLES; ++j) {
+
+        for (long i = 0; i < NBR_RANDOMS; i++) {
+            int rand_num = random() % TAILLE_TABLEAU;
+            tableau_local[rand_num]++;
         }
+
+        // Synchronisation avec le tableau global
+        semop(sem_id, &bloquer_semaphore, 1); // Verrouillage
+        for (int i = 0; i < TAILLE_TABLEAU; i++) {
+            tableau_IPC[i] += tableau_local[i];
+        }
+        semop(sem_id, &debloquer_semaphore, 1); // Déverrouillage
+
+        printf("Processus %d : synchronisation cycle %d terminée\n", process_id, j + 1);
+
+        memset(tableau_local, 0, TAILLE_TABLEAU * sizeof(int));
     }
 
-    return min_value;
+    gettimeofday(&end, NULL);
+
+    double elapsed_time = (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec) / 1000000.0;
+
+    printf("Processus %d : génération et synchronisation terminées en %.2f secondes\n", process_id, elapsed_time);
+
+    free(tableau_local);
 }
 
-
-int *server_array;  // Tableau du serveur (dynamique)
-pthread_mutex_t server_array_mutex = PTHREAD_MUTEX_INITIALIZER;  // Mutex pour protéger l'accès au tableau
-
-// Compteur pour savoir combien de clients ont été traités
-int clients_processed = 0;
-pthread_mutex_t clients_processed_mutex = PTHREAD_MUTEX_INITIALIZER;  // Mutex pour protéger le compteur
-
-// Structure pour stocker les informations des clients
-typedef struct {
-    int socket;
-} client_info;
-
-void generate_filename_with_counter(int client_number, char *filename, size_t size) {
-    snprintf(filename, size, "donnees_ordinateur_%d.csv", client_number);
-}
-
-// Fonction pour créer un fichier CSV et y enregistrer les données
-void create_data_file(int *data, int data_size) {
-    char filename[256];
-
+// Fonction pour créer un fichier CSV et y enregistrer les données du tableau IPC (Index,Occurence)
+void generer_csv_index_occurence(int *tableau, int taille,char * adresse_ip_client,int indice_traitement_client) {
+    char nom_fichier[256];
     // Créer un nom de fichier unique basé sur le compteur des clients traités
-    generate_filename_with_counter(clients_processed, filename, sizeof(filename));
+    snprintf(nom_fichier, sizeof(nom_fichier), "donnees_analyse_client_%s_%d.csv", adresse_ip_client, indice_traitement_client);
 
     // Ouvrir le fichier en mode écriture
-    FILE *file = fopen(filename, "w");
+    FILE *file = fopen(nom_fichier, "w");
     if (file == NULL) {
         perror("Erreur lors de la création du fichier");
         return;
@@ -75,184 +93,278 @@ void create_data_file(int *data, int data_size) {
     // Enregistrer les données dans le fichier CSV
     fprintf(file, "Index,Occurence\n");  // Entête du CSV
 
-    for (int i = 0; i < data_size; i++) {
-        fprintf(file, "%d,%.8f\n", i, data[i]);  // Valeur (index) et pourcentage
+    for (unsigned int i = 0; i < taille; i++) {
+        fprintf(file, "%d,%d\n", i, tableau[i]);  // Valeur (index) et pourcentage
     }
-
 
     // Fermer le fichier après l'enregistrement
     fclose(file);
 
-    printf("Données sauvegardées dans le fichier %s\n", filename);
+    printf("Données sauvegardées dans le fichier %s\n", nom_fichier);
 }
 
-void print_server_array() {
-    printf("Tableau du serveur :\n");
-    for (int i = 0; i < 10; i++) {  // Affiche les 10 premiers éléments pour la vérification
-        printf("%d ", server_array[i]);
+// Fonction pour générer un fichier CSV avec les statistiques
+void generer_stats_csv(long long maxOccurence, long long minOccurence, double moyenne, const char *adresse_ip_client, int indice_traitement_client) {
+    // Créer un nom de fichier unique basé sur l'adresse IP du client et le nombre total de clients traités
+    char nom_fichier[256];
+    snprintf(nom_fichier, sizeof(nom_fichier), "stats_client_%s_%d.csv", adresse_ip_client, indice_traitement_client);
+
+    // Ouvrir le fichier en mode écriture
+    FILE *file = fopen(nom_fichier, "w");
+    if (file == NULL) {
+        perror("Erreur lors de la création du fichier CSV");
+        return;
     }
-    printf("\n");
+
+    // Enregistrer les statistiques dans le fichier CSV
+    fprintf(file, "Moyenne,Max,Min\n");  // Entête du CSV
+    fprintf(file, "%.2f,%lld,%lld\n", moyenne, maxOccurence, minOccurence);  // Valeurs calculées
+
+    // Fermer le fichier après l'enregistrement
+    fclose(file);
+
+    printf("Les statistiques ont été enregistrées dans le fichier %s\n", nom_fichier);
 }
 
-void *process_client(void *arg) {
-    client_info *client_data = (client_info *)arg;
-    int new_socket = client_data->socket;
-    free(client_data);
-
-    int received_size = 0;
-    int number;
-
-    // Créer un tableau temporaire pour recevoir les données du client
-    int *client_array = (int *)malloc(ARRAY_SIZE * sizeof(int));
-    if (client_array == NULL) {
-        perror("Erreur d'allocation mémoire pour le tableau client");
+// Fonction pour effectuer le pliage
+int* plier_tableau( int* tableau,  int taille,  int taille_bloc,  int* nouvelle_taille) {
+    // Calcul de la taille du tableau réduit
+    *nouvelle_taille = taille / taille_bloc;
+    int* tableau_reduit = malloc(*nouvelle_taille * sizeof(int));
+    if (!tableau_reduit) {
+        perror("Erreur d'allocation mémoire pour le tableau réduit");
         return NULL;
     }
 
-    while (1) {
-
-        int total_size = ARRAY_SIZE * sizeof(int);
-
-        // Recevoir le tableau en une seule fois
-        int received_size = read(new_socket, client_array, total_size);
-
-        if (received_size < 0) {
-            perror("Erreur lors de la lecture des données");
+    // Pliage : somme des valeurs dans des blocs de taille taille_bloc
+    for (unsigned int i = 0; i < *nouvelle_taille; i++) {
+        unsigned int somme = 0;
+        for (unsigned int j = 0; j < taille_bloc; j++) {
+            somme += tableau[i * taille_bloc + j];
         }
-
-        // Si la réception du tableau est correcte
-        if (received_size == total_size) {
-
-            printf("Tableau du client reçu avec succès.\n");
-
-            // Verrouiller le tableau avant de le modifier
-            pthread_mutex_lock(&server_array_mutex);
-
-            // Effectuer la somme du tableau client avec celui du serveur
-            for (int i = 0; i < ARRAY_SIZE; i++) {
-                server_array[i] += client_array[i];  // Additionner les valeurs du tableau client au tableau serveur
-
-            }
-
-            maxOccurence = (find_max(server_array,ARRAY_SIZE) / totalOccurence)*100 ;
-            minOccurence = (find_min(server_array,ARRAY_SIZE) / totalOccurence)*100 ;
-
-
-
-            // Sauvegarder les données dans un fichier avec un nom unique
-            create_data_file(server_array, ARRAY_SIZE);
-
-            // Déverrouiller le tableau
-            pthread_mutex_unlock(&server_array_mutex);
-            // Envoyer une confirmation au client
-            number = 1;  // Confirmation de la bonne réception
-            if (send(new_socket, &number, sizeof(number), 0) < 0) {
-                perror("Erreur lors de l'envoi de la confirmation");
-            } else {
-                printf("Confirmation envoyée au client : %d\n", number);
-            }
-        } else {
-            printf("Erreur dans la réception des données.\n");
-            break;
-        }
-
-        print_server_array();
+        tableau_reduit[i] = somme; // Stocke la somme ou une autre statistique
     }
 
-    // Libérer la mémoire allouée pour le tableau client
-    free(client_array);
-
-    // Fermer la connexion avec le client
-    close(new_socket);
-    printf("Connexion fermée avec le client\n");
-
-    return NULL;
+    return tableau_reduit;
 }
 
+// Fonction pour trouver le maxOccurence
+long long trouver_maxOccurence(int *tableau, int taille) {
+    // Initialisation de la valeur maximale avec le premier élément du tableau
+    long long valeur_max = tableau[0];
+
+    // Parcourir le tableau à partir du deuxième élément
+    for (int i = 1; i < taille; i++) {
+        // Si la valeur actuelle est plus grande que la valeur maximale trouvée jusqu'à présent
+        if (tableau[i] > valeur_max) {
+            // Mettre à jour la valeur maximale
+            valeur_max = tableau[i];
+        }
+    }
+
+    return valeur_max;
+}
+
+// Fonction pour trouver le minOccurence
+long long trouver_minOccurence(int *tableau, int taille) {
+    // Initialisation de la valeur minimale avec le premier élément du tableau
+    long long valeur_min = tableau[0];
+
+    // Parcourir le tableau à partir du deuxième élément
+    for (int i = 1; i < taille; i++) {
+        // Si la valeur actuelle est plus petite que la valeur minimale trouvée jusqu'à présent
+        if (tableau[i] < valeur_min) {
+            // Mettre à jour la valeur minimale
+            valeur_min = tableau[i];
+        }
+    }
+
+    return valeur_min;
+}
 
 int main() {
-    int server_fd, new_socket;
-    struct sockaddr_in address;
-    int addrlen = sizeof(address);
+    printf("DEMMARAGE DU SERVEUR.... \n");
+    int sockfd, newsockfd;
+    struct sockaddr_in server_addr, client_addr;
+    socklen_t client_len;
+    int shm_id, sem_id;
+    int *tableau_IPC;
 
-    // Allouer dynamiquement le tableau du serveur
-    server_array = (int *)malloc(ARRAY_SIZE * sizeof(int));
-    if (server_array == NULL) {
-        perror("Erreur d'allocation mémoire");
-        exit(EXIT_FAILURE);
+    // Création d'un segment de mémoire partagée
+    shm_id = shmget(SHM_KEY, TAILLE_TABLEAU * sizeof(int), IPC_CREAT | 0666);
+    if (shm_id == -1) {
+        perror("Erreur shmget");
+        exit(1);
     }
 
-    // 1. Création de la socket
-    server_fd = socket(AF_INET, SOCK_STREAM, 0);
-    if (server_fd == 0) {
-        perror("Échec de la création de la socket");
-        exit(EXIT_FAILURE);
+    // Attachement du segment de mémoire partagée au processus courant
+    tableau_IPC = (int *)shmat(shm_id, NULL, 0);
+    if (tableau_IPC == (void *)-1) {
+        perror("Erreur shmat");
+        exit(1);
     }
-    printf("Socket créée avec succès\n");
 
-    // 2. Préparer l'adresse du serveur
-    address.sin_family = AF_INET;
-    address.sin_addr.s_addr = inet_addr(IP_ADRESSE_INTERFACE_SERVEUR);
-    address.sin_port = htons(PORT);
+    // Initialisation du tableau partagé avec des zéros
+    memset(tableau_IPC, 0, TAILLE_TABLEAU * sizeof(int));
 
-    // 3. Associer la socket à l'adresse et au port spécifiés
-    if (bind(server_fd, (struct sockaddr *)&address, sizeof(address)) < 0) {
-        perror("Échec du bind");
-        exit(EXIT_FAILURE);
+    // Création d'un sémaphore pour la synchronisation des processus
+    sem_id = semget(IPC_PRIVATE, 1, IPC_CREAT | 0666);
+    if (sem_id == -1) {
+        perror("Erreur semget");
+        exit(1);
     }
-    printf("Bind réussi, serveur prêt à écouter\n");
 
-    // 4. Mettre la socket en mode écoute pour accepter les connexions
-    if (listen(server_fd, MAX_CLIENTS) < 0) {
-        perror("Échec de l'écoute");
-        exit(EXIT_FAILURE);
-    }
-    printf("Serveur en écoute sur le port %d...\n", PORT);
+    // Initialisation du sémaphore à 1 (verrou débloqué)
+    semctl(sem_id, 0, SETVAL, 1);
 
-    while (1) {
-        // 5. Accepter une connexion d'un client
-        new_socket = accept(server_fd, (struct sockaddr *)&address, (socklen_t *)&addrlen);
-        if (new_socket < 0) {
-            perror("Échec de l'acceptation de la connexion");
-            continue;
+
+    printf("Calcul en cours...... \n");
+
+
+    // Attention: démarrage des processus enfants avant de créer la socket
+    for (int i = 0; i < NBR_PROCESSUS; i++) {
+        pid_t pid = fork();
+        if (pid == 0) { // Processus fils
+            srand(getppid()); // Initialisation d'une graine pour les nombres aléatoires
+            generer_randoms(i + 1, tableau_IPC, sem_id);
+            exit(0); // Exit after completing task
         }
-        clients_processed++;
-        printf("Connexion acceptée, client connecté\n");
-
-        // 6. Créer un thread pour traiter le client
-        pthread_t client_thread;
-        client_info *client_data = (client_info *)malloc(sizeof(client_info));
-        if (client_data == NULL) {
-            perror("Erreur d'allocation mémoire pour les données du client");
-            continue;
-        }
-        client_data->socket = new_socket;
-
-        // Créer le thread pour traiter ce client
-        if (pthread_create(&client_thread, NULL, process_client, (void *)client_data) != 0) {
-            perror("Erreur lors de la création du thread");
-            free(client_data);
-        } else {
-            // Détacher le thread pour qu'il se termine indépendamment
-            pthread_detach(client_thread);
-        }
-
-        // Vérifier si tous les clients ont été traités et afficher le tableau final
-        pthread_mutex_lock(&clients_processed_mutex);
-        if (clients_processed == MAX_CLIENTS) {
-            // Tous les clients ont été traités, afficher le tableau final
-            printf("Tous les clients ont terminé, tableau final du serveur :\n");
-            print_server_array();
-        }
-        pthread_mutex_unlock(&clients_processed_mutex);
     }
 
-    // 7. Fermer la socket serveur
-    close(server_fd);
-    printf("Serveur fermé\n");
+    // Attendre la fin des processus enfants
+    for (int i = 0; i < NBR_PROCESSUS; i++) {
+        wait(NULL);
+    }
 
-    // Libérer la mémoire allouée pour le tableau du serveur
-    free(server_array);
+    // Création de la socket
+    sockfd = socket(AF_INET, SOCK_STREAM, 0);
+    if (sockfd < 0) {
+        perror("Erreur lors de la création de la socket");
+        exit(1);
+    }
+
+    // Configurer l'adresse du serveur
+    memset(&server_addr, 0, sizeof(server_addr));
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_addr.s_addr = inet_addr(ADRESSE_IP_INTERFACE_SERVEUR);
+    server_addr.sin_port = htons(PORT);
+
+    // Bind the socket to the address
+    if (bind(sockfd, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0) {
+        perror("Erreur bind");
+        exit(1);
+    }
+
+    printf("Serveur : DEMARAGE.....\n");
+
+    // Ecoute sur le port
+    if (listen(sockfd, MAX_CLIENTS) < 0) {
+        perror("Erreur ecoute");
+        exit(1);
+    }
+
+
+    // Accept connections
+    while (nbrClientTotalTraiter < nbrClientPrevus) {
+        printf("Serveur : Ecoute sur %s:%d  ......\n",ADRESSE_IP_INTERFACE_SERVEUR,PORT);
+        client_len = sizeof(client_addr);
+        newsockfd = accept(sockfd, (struct sockaddr *)&client_addr, &client_len);
+        if (newsockfd < 0) {
+            perror("Erreur accept");
+            exit(1);
+        }
+
+        // Récupérer l'adresse IP du client
+        char adresse_ip_client[INET_ADDRSTRLEN];
+        inet_ntop(AF_INET, &client_addr.sin_addr, adresse_ip_client, sizeof(adresse_ip_client));
+
+        printf("Serveur : le client %s viens de se connecter  \n",adresse_ip_client);
+
+
+        // Réceptionner le tableau depuis le client
+        int * tableau_client_recu = malloc(TAILLE_TABLEAU*sizeof(int));
+
+        int bytes_recu = recv(newsockfd, tableau_client_recu, sizeof(tableau_client_recu), 0);
+        if (bytes_recu < 0) {
+            perror("Erreur recv");
+            exit(1);
+        }
+
+        // Effectuer la somme du tableau client avec celui du serveur
+        for (int i = 0; i < TAILLE_TABLEAU; i++) {
+            tableau_IPC[i] += tableau_client_recu[i];  // Additionner les valeurs du tableau client au tableau serveur
+        }
+
+        printf("Serveur : %s -> Tableau reçu \n", adresse_ip_client);
+
+        // Envoi d'une confirmation au client
+        int confirmation = 1;
+        int bytes_envoyer = send(newsockfd, &confirmation, sizeof(confirmation), 0);
+        if (bytes_envoyer < 0) {
+            perror("Erreur envoie");
+            exit(1);
+        }
+        printf("Serveur : Confirmation Tableau recus envoyer au client -> %s   \n", adresse_ip_client);
+
+
+
+        // Calculer les statistiques (moyenne, min, max)
+        long long maxOccurence = trouver_maxOccurence(tableau_IPC, TAILLE_TABLEAU);
+        long long minOccurence = trouver_minOccurence(tableau_IPC, TAILLE_TABLEAU);
+        double moyenne = (double)(maxOccurence - minOccurence) / nbr_cases_theorique;
+
+        // Generer le fichier CSV pour les statistique de chaque client
+        generer_stats_csv(maxOccurence,minOccurence,moyenne,adresse_ip_client,nbrClientTotalTraiter+1);
+
+        // Pliage pour generer une courbe des occurences
+        int nouvelle_taille;
+        int *tableau_plie = plier_tableau(tableau_client_recu, TAILLE_TABLEAU, K, &nouvelle_taille);
+        // Generer les fichier CSV pour les Index,Occurence a partir du tableau plier
+        generer_csv_index_occurence(tableau_plie, nouvelle_taille,adresse_ip_client,nbrClientTotalTraiter+1);
+        free(tableau_plie);
+
+
+        // Fermer la connexion avec le client après réception
+        close(newsockfd);
+        nbrClientTotalTraiter++;
+        printf("Serveur : deconnexion du client  %s\n", adresse_ip_client);
+        printf("Serveur :  %d clients sur %d traiter il reste %d clients a traiter ....  \n", nbrClientTotalTraiter,nbrClientPrevus,nbrClientPrevus-nbrClientTotalTraiter);
+
+    }
+
+    printf("Serveur : Calcul les stats global .... \n");
+
+    // Calculer les statistiques (moyenne, min, max)
+    maxOccurence = trouver_maxOccurence(tableau_IPC, TAILLE_TABLEAU);
+    minOccurence = trouver_minOccurence(tableau_IPC, TAILLE_TABLEAU);
+    moyenne = (double)(maxOccurence - minOccurence) / (nbr_cases_theorique*(nbrClientPrevus+1));
+
+
+    printf("Serveur : Generation du fichier CSV pour les stats global .... \n");
+
+    // Generer le fichier CSV pour les statistique de chaque client
+    generer_stats_csv(maxOccurence,minOccurence,moyenne,"SERVER",0);
+
+
+    printf("Serveur : Pliage du tableau pour generer le fichier CSV pour les Index,Occurences global .... \n");
+
+    // Pliage pour generer une courbe des occurences
+    int nouvelle_taille;
+    int *tableau_plie = plier_tableau(tableau_IPC, TAILLE_TABLEAU, K, &nouvelle_taille);
+
+    generer_csv_index_occurence(tableau_plie, nouvelle_taille,"SERVER",0);
+    free(tableau_plie);
+
+    printf("Serveur : Liberation de la memoire .... \n");
+
+    // Detacher la mémoire partagée
+    shmdt(tableau_IPC);
+
+    // Detruire le segment de mémoire partagée et le sémaphore
+    shmctl(shm_id, IPC_RMID, NULL);
+    semctl(sem_id, 0, IPC_RMID);
+
+    printf("Serveur : DECONNECTER ");
 
     return 0;
 }

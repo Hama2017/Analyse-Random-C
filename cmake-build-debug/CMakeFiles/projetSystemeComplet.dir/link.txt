@@ -1,0 +1,1 @@
+/usr/bin/cc -g CMakeFiles/projetSystemeComplet.dir/main.c.o CMakeFiles/projetSystemeComplet.dir/s.c.o CMakeFiles/projetSystemeComplet.dir/client.c.o CMakeFiles/projetSystemeComplet.dir/test.c.o CMakeFiles/projetSystemeComplet.dir/serveur.c.o CMakeFiles/projetSystemeComplet.dir/arrete.c.o -o projetSystemeComplet

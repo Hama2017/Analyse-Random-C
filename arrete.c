@@ -35,7 +35,7 @@ long long nbr_cases_theorique  = 240000000000LL;  // Nombre de case theorique po
 unsigned int generer_graine() {
     unsigned int graine = 0;
 
-        graine = (unsigned int)(time(NULL) ^ getpid());
+    graine = (unsigned int)(time(NULL) ^ getpid());
 
     return graine;
 }
@@ -168,80 +168,6 @@ long long trouver_minOccurence(int *tableau, int taille) {
 
 int main() {
 
-    printf("DEMMARAGE DU CLIENT 1.... \n");
-
-
-    // PARTIE 1 - IPC (Communication Inter-Processus)
-    pid_t pid;
-    int shm_id, sem_id;
-    int *tableau_IPC;
-
-    // Création d'un segment de mémoire partagée
-    shm_id = shmget(SHM_KEY, TAILLE_TABLEAU * sizeof(int), IPC_CREAT | 0666);
-    if (shm_id == -1) {
-        perror("Erreur shmget");
-        exit(1);
-    }
-
-    // Attachement du segment de mémoire partagée au processus courant
-    tableau_IPC = (int *)shmat(shm_id, NULL, 0);
-    if (tableau_IPC == (void *)-1) {
-        perror("Erreur shmat");
-        exit(1);
-    }
-
-    // Initialisation du tableau partagé avec des zéros
-    memset(tableau_IPC, 0, TAILLE_TABLEAU * sizeof(int));
-
-    // Création d'un sémaphore pour la synchronisation des processus
-    sem_id = semget(IPC_PRIVATE, 1, IPC_CREAT | 0666);
-    if (sem_id == -1) {
-        perror("Erreur semget");
-        exit(1);
-    }
-
-    // Initialisation du sémaphore à 1 (verrou débloqué)
-    semctl(sem_id, 0, SETVAL, 1);
-
-
-    printf("Calcul en cours.... \n");
-
-
-    // Création de processus enfants
-    for (int p = 0; p < NBR_PROCESSUS; p++) {
-        pid = fork();
-        if (pid == 0) { // Processus enfant
-            srand(generer_graine()); // Initialisation d'une graine pour les nombres aléatoires
-            generer_randoms(p, tableau_IPC, sem_id); // Génération de nombres aléatoires
-            shmdt(tableau_IPC); // Détachement de la mémoire partagée
-            exit(0); // Terminaison du processus enfant
-        }
-    }
-
-    // Attente de la fin de tous les processus enfants
-    for (int p = 0; p < NBR_PROCESSUS; p++) {
-        wait(NULL);
-    }
-
-    // Calculer la valeur maximale d'occurrence dans le tableau IPC
-    maxOccurence = trouver_maxOccurence(tableau_IPC, TAILLE_TABLEAU);
-
-    // Calculer la valeur minimale d'occurrence dans le tableau IPC
-    minOccurence = trouver_minOccurence(tableau_IPC, TAILLE_TABLEAU);
-
-    // Calculer la moyenne
-    moyenne = (double)(maxOccurence - minOccurence) / nbr_cases_theorique;
-
-    // Affichage des 10 premières valeurs du tableau partagé
-    printf("Distribution des nombres (10 premières cases) :\n");
-    for (int i = 0; i < 10; i++) {
-        printf("Nombre %d : %d occurrences\n", i, tableau_IPC[i]);
-    }
-
-    // Affichage des statistiques : valeur maximale, minimale et moyenne d'occurrences
-    printf("Valeur maximale : %lld\n", maxOccurence);
-    printf("Valeur minimale : %lld\n", minOccurence);
-    printf("Moyenne des occurrences : %f\n", moyenne);
 
     // PARTIE 2 - Création et configuration de la socket
 
@@ -273,42 +199,6 @@ int main() {
 
     printf("Connecté au serveur : %s \n", ADRESSE_IP_INTERFACE_SERVEUR);
 
-    // Envoi du tableau partagé IPC au serveur
-    int taille_total_tableau = TAILLE_TABLEAU * sizeof(int);
-    int taille_total_tableau_envoyer = send(sock, tableau_IPC, taille_total_tableau, 0);
-
-    if (taille_total_tableau_envoyer < 0) {
-        perror("Erreur lors de l'envoi des données");
-    } else if (taille_total_tableau_envoyer < taille_total_tableau) {
-        fprintf(stderr, "Données partiellement envoyées : %d/%d octets\n", taille_total_tableau_envoyer, taille_total_tableau);
-    } else {
-        printf("Données envoyées avec succès (%d octets)\n", taille_total_tableau_envoyer);
-    }
-
-    // Réception d'une confirmation du serveur
-    int confimation;
-    int bytes_recu  = recv(sock, &confimation, sizeof(confimation), 0);
-    if (bytes_recu  < 0) {
-        perror("Erreur lors de la réception de la confirmation");
-    }
-    if (confimation == 1) {
-        printf("Confirmation reçue du serveur : OK \n");
-    }
-
-    // PARTIE 3 - Sauvegarder les donnees
-
-    // Appel de la fonction plier_tableau pour reduire la taille du tableau et generer un fichier CSV
-    int taille_tableau_plier;
-    int* tableau_plier = plier_tableau(tableau_IPC, TAILLE_TABLEAU, K, &taille_tableau_plier);
-
-    // Génération d'un fichier CSV avec les indices et occurrences
-    generer_csv_index_occurence(tableau_plier, taille_tableau_plier);
-
-    // PARTIE 4 - Nettoyage des ressources
-
-    shmdt(tableau_IPC); // Détachement de la mémoire partagée
-    shmctl(shm_id, IPC_RMID, NULL); // Suppression de la mémoire partagée
-    semctl(sem_id, 0, IPC_RMID); // Suppression du sémaphore
 
     // Fermeture de la connexion au serveur
     close(sock);
