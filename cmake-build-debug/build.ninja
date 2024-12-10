@@ -67,6 +67,18 @@ build CMakeFiles/projetSystemeComplet.dir/client.c.o: C_COMPILER__projetSystemeC
   OBJECT_DIR = CMakeFiles/projetSystemeComplet.dir
   OBJECT_FILE_DIR = CMakeFiles/projetSystemeComplet.dir
 
+build CMakeFiles/projetSystemeComplet.dir/test.c.o: C_COMPILER__projetSystemeComplet_unscanned_Debug /Users/hamaba/CLionProjects/projetSystemeComplet/test.c || cmake_object_order_depends_target_projetSystemeComplet
+  DEP_FILE = CMakeFiles/projetSystemeComplet.dir/test.c.o.d
+  FLAGS = -g -std=gnu2x -isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX15.0.sdk -fcolor-diagnostics
+  OBJECT_DIR = CMakeFiles/projetSystemeComplet.dir
+  OBJECT_FILE_DIR = CMakeFiles/projetSystemeComplet.dir
+
+build CMakeFiles/projetSystemeComplet.dir/server2.c.o: C_COMPILER__projetSystemeComplet_unscanned_Debug /Users/hamaba/CLionProjects/projetSystemeComplet/server2.c || cmake_object_order_depends_target_projetSystemeComplet
+  DEP_FILE = CMakeFiles/projetSystemeComplet.dir/server2.c.o.d
+  FLAGS = -g -std=gnu2x -isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX15.0.sdk -fcolor-diagnostics
+  OBJECT_DIR = CMakeFiles/projetSystemeComplet.dir
+  OBJECT_FILE_DIR = CMakeFiles/projetSystemeComplet.dir
+
 
 # =============================================================================
 # Link build statements for EXECUTABLE target projetSystemeComplet
@@ -75,7 +87,7 @@ build CMakeFiles/projetSystemeComplet.dir/client.c.o: C_COMPILER__projetSystemeC
 #############################################
 # Link the executable projetSystemeComplet
 
-build projetSystemeComplet: C_EXECUTABLE_LINKER__projetSystemeComplet_Debug CMakeFiles/projetSystemeComplet.dir/main.c.o CMakeFiles/projetSystemeComplet.dir/serveur.c.o CMakeFiles/projetSystemeComplet.dir/client.c.o
+build projetSystemeComplet: C_EXECUTABLE_LINKER__projetSystemeComplet_Debug CMakeFiles/projetSystemeComplet.dir/main.c.o CMakeFiles/projetSystemeComplet.dir/serveur.c.o CMakeFiles/projetSystemeComplet.dir/client.c.o CMakeFiles/projetSystemeComplet.dir/test.c.o CMakeFiles/projetSystemeComplet.dir/server2.c.o
   FLAGS = -g -isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX15.0.sdk
   OBJECT_DIR = CMakeFiles/projetSystemeComplet.dir
   POST_BUILD = :

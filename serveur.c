@@ -9,15 +9,16 @@
 #define IP_ADRESSE_INTERFACE_SERVEUR "192.168.56.1"  // Adresse IP du serveur 127.0.0.1
 #define PORT 8080  // Le port sur lequel le serveur écoute
 #define MAX_CLIENTS 10  // Le nombre maximum de clients dans la file d'attente
-#define ARRAY_SIZE (1<<10)  // Taille du tableau du serveur (2^20 éléments)
+#define ARRAY_SIZE (1<<28)  // Taille du tableau du serveur (2^28 éléments)
 #define CHUNK_SIZE 1024  // Taille du bloc pour la réception (1024 octets)
-long long totalOccurence=0;
-double maxOccurenceP=0.0;
-double minOccurenceP=0.0;
+#define
+double moyenne=0;
+long long maxOccurence=0;
+long long minOccurence=0;
 
 
-int find_max(int *data, int data_size) {
-    int max_value = data[0];  // Initialiser max_value avec le premier élément du tableau
+long long find_max(int *data, int data_size) {
+    long long max_value = data[0];  // Initialiser max_value avec le premier élément du tableau
 
     for (int i = 1; i < data_size; i++) {
         if (data[i] > max_value) {
@@ -28,8 +29,8 @@ int find_max(int *data, int data_size) {
     return max_value;
 }
 
-int find_min(int *data, int data_size) {
-    int min_value = data[0];  // Initialiser min_value avec le premier élément du tableau
+long long find_min(int *data, int data_size) {
+    long long min_value = data[0];  // Initialiser min_value avec le premier élément du tableau
 
     for (int i = 1; i < data_size; i++) {
         if (data[i] < min_value) {
@@ -72,11 +73,10 @@ void create_data_file(int *data, int data_size) {
     }
 
     // Enregistrer les données dans le fichier CSV
-    fprintf(file, "Index,Pourcentage\n");  // Entête du CSV
+    fprintf(file, "Index,Occurence\n");  // Entête du CSV
 
     for (int i = 0; i < data_size; i++) {
-        double percentage = ((double)data[i] / totalOccurence) * 100;  // Calcul du pourcentage
-        fprintf(file, "%d,%.8f\n", i, percentage);  // Valeur (index) et pourcentage
+        fprintf(file, "%d,%.8f\n", i, data[i]);  // Valeur (index) et pourcentage
     }
 
 
@@ -88,7 +88,7 @@ void create_data_file(int *data, int data_size) {
 
 void print_server_array() {
     printf("Tableau du serveur :\n");
-    for (int i = 0; i < 4; i++) {  // Affiche les 10 premiers éléments pour la vérification
+    for (int i = 0; i < 10; i++) {  // Affiche les 10 premiers éléments pour la vérification
         printf("%d ", server_array[i]);
     }
     printf("\n");
@@ -110,24 +110,19 @@ void *process_client(void *arg) {
     }
 
     while (1) {
-        // Recevoir un tableau du client
-        received_size = 0;
-        while (received_size < ARRAY_SIZE * sizeof(int)) {
-            int chunk_size = ARRAY_SIZE * sizeof(int) - received_size > CHUNK_SIZE ? CHUNK_SIZE : ARRAY_SIZE * sizeof(int) - received_size;
-            int valread = read(new_socket, client_array + received_size / sizeof(int), chunk_size);
-            if (valread <= 0) {
-                if (valread == 0) {
-                    printf("Le client a fermé la connexion.\n");
-                } else {
-                    perror("Erreur lors de la lecture des données");
-                }
-                break;
-            }
-            received_size += valread;
+
+        int total_size = ARRAY_SIZE * sizeof(int);
+
+        // Recevoir le tableau en une seule fois
+        int received_size = read(new_socket, client_array, total_size);
+
+        if (received_size < 0) {
+            perror("Erreur lors de la lecture des données");
         }
 
         // Si la réception du tableau est correcte
-        if (received_size == ARRAY_SIZE * sizeof(int)) {
+        if (received_size == total_size) {
+
             printf("Tableau du client reçu avec succès.\n");
 
             // Verrouiller le tableau avant de le modifier
@@ -136,12 +131,11 @@ void *process_client(void *arg) {
             // Effectuer la somme du tableau client avec celui du serveur
             for (int i = 0; i < ARRAY_SIZE; i++) {
                 server_array[i] += client_array[i];  // Additionner les valeurs du tableau client au tableau serveur
-                totalOccurence += client_array[i];  // Calcul du total des occurrences
 
             }
 
-            maxOccurenceP = (find_max(server_array,ARRAY_SIZE) / totalOccurence)*100 ;
-            minOccurenceP = (find_min(server_array,ARRAY_SIZE) / totalOccurence)*100 ;
+            maxOccurence = (find_max(server_array,ARRAY_SIZE) / totalOccurence)*100 ;
+            minOccurence = (find_min(server_array,ARRAY_SIZE) / totalOccurence)*100 ;
 
 
 

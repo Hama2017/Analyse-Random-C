@@ -5,4 +5,6 @@ set(CMAKE_C_STANDARD 23)
 
 add_executable(projetSystemeComplet main.c
         serveur.c
-        client.c)
+        client.c
+        test.c
+        server2.c)
