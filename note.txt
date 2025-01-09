@@ -1,0 +1,16 @@
+ * Le programme crée plusieurs processus, où chaque processus génère des nombres aléatoires à travers plusieurs cycles.
+ * Chaque processus utilise une graine unique pour la génération des nombres aléatoires afin d'assurer une distribution différente des valeurs
+ * dans chaque processus, évitant ainsi les répétitions et assurant une meilleure répartition des valeurs dans le tableau final.
+ * Dans chaque cycle, chaque processus génère un nombre de nombres aléatoires et met à jour un tableau partagé en mémoire inter-processus (IPC)
+ * avec les occurrences de chaque nombre généré.
+ * Cette mise à jour du tableau IPC se fait de manière synchronisée grâce à l'utilisation de sémaphores,
+ * qui garantissent qu'un seul processus accède à la mémoire partagée à la fois.
+ * Pour la synchronisation des processus, nous avons choisi d'utiliser une granularité grossière. Cela signifie que l'accès au tableau IPC
+ * est verrouillé dans son ensemble pendant que chaque processus effectue ses mises à jour. Bien que cette approche puisse entraîner des temps d'attente
+ * plus longs pour les autres processus, elle simplifie la gestion de la synchronisation en évitant les conflits au niveau des éléments individuels du tableau.
+ * Les sémaphores sont utilisés pour éviter les conflits d'accès concurrentiel au tableau IPC :
+ *   - Avant de modifier le tableau, chaque processus verrouille le sémaphore pour garantir qu'aucun autre processus ne puisse y accéder simultanément.
+ *   - Une fois la mise à jour effectuée, le processus déverrouille le sémaphore, permettant ainsi à un autre processus de modifier le tableau en toute sécurité.
+ * À la fin de tous les cycles, une fois que chaque processus a mis à jour le tableau IPC avec les occurrences des nombres aléatoires générés,
+ * le programme envoie ce tableau au serveur via un socket. Le serveur peut alors traiter ces données, par exemple pour effectuer des analyses
+ * ou des traitements supplémentaires sur les occurrences des nombres.

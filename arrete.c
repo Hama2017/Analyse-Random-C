@@ -13,10 +13,12 @@
 
 #define ADRESSE_IP_INTERFACE_SERVEUR "127.0.0.1"  // Adresse IP du serveur
 #define PORT 8080  // Le port sur lequel le serveur écoute
-#define TAILLE_TABLEAU (1<<28)  // Taille du tableau à envoyer (2^28 éléments)
+//#define TAILLE_TABLEAU (1<<28)  // Taille du tableau à envoyer (2^28 éléments)
+#define TAILLE_TABLEAU (1<<20)
 #define NBR_PROCESSUS 6         // Nombre de processus
 #define NBR_CYCLES 10             // Nombre de cycles
-#define NBR_RANDOMS (1000000000L) // Nombres aléatoires par cycle (10 milliard)
+//#define NBR_RANDOMS (1000000000L) // Nombres aléatoires par cycle (10 milliard)
+#define NBR_RANDOMS (1000000000L) // 1 milliard
 #define SHM_KEY 0x12          // Clé pour la mémoire partagée
 #define K 1024       // Taille d'un bloc pour le pliage (pour generer le csv Index,Occurence avoir une allure de la courbe )
 #define NBR_CASES 4800        // Nombre de case pour calculer la moyenne (MaxO - Min0)
@@ -87,7 +89,6 @@ void generer_csv_index_occurence(int *tableau, int taille) {
     // Créer un nom de fichier unique basé sur le compteur des clients traités
     snprintf(nom_fichier, sizeof(nom_fichier), "donnees_analyse.csv");
 
-
     // Ouvrir le fichier en mode écriture
     FILE *file = fopen(nom_fichier, "w");
     if (file == NULL) {
@@ -101,7 +102,6 @@ void generer_csv_index_occurence(int *tableau, int taille) {
     for (unsigned int i = 0; i < taille; i++) {
         fprintf(file, "%d,%d\n", i, tableau[i]);  // Valeur (index) et pourcentage
     }
-
 
     // Fermer le fichier après l'enregistrement
     fclose(file);

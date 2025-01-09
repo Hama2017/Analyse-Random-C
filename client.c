@@ -1,3 +1,27 @@
+/*
+ * Programme : Client.C
+ * *****************************************************
+ * Description : Ce programme génère et synchronise les occurrences des nombres aléatoires dans un tableau en IPC (mémoire partagée)
+ * et envoie le tableau de l'IPC à un serveur pour traitement via un socket.
+ ********************************************************************
+ * Le code a été réalisé par BA Hamadou et BA Salimatouh Maliah.
+ * 15 Décembre 2024.
+ * Le projet porte le nom "Etude Fonction rand".
+ * Lien du dépôt GitHub : https://github.com/Hama2017/Analyse-Random-C
+ *********************************************************************
+ * Bibliothèques utilisées :
+ * - <stdarg.h> : Permet de gérer des arguments variables pour la fonction de log.
+ * - <stdio.h> : Fournit des fonctions de base d'entrée/sortie, comme printf, pour afficher et enregistrer des messages.
+ * - <stdlib.h> : Contient des fonctions utilitaires comme malloc et random.
+ * - <unistd.h> : Permet l'utilisation de fonctionnalités POSIX telles que sleep et fork.
+ * - <arpa/inet.h> : Utilisé pour la gestion des adresses IP et des sockets.
+ * - <sys/socket.h> : Fournit des fonctions pour la création et la gestion de sockets.
+ * - <sys/ipc.h>, <sys/shm.h>, <sys/sem.h> : Gèrent la mémoire partagée et les sémaphores pour la synchronisation.
+ * - <sys/time.h> : Permet de mesurer le temps écoulé pendant l'exécution du programme.
+ * - <string.h> : Fournit des fonctions utilitaires pour la manipulation de chaînes de caractères.
+ */
+
+#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -9,193 +33,302 @@
 #include <sys/wait.h>
 #include <sys/time.h>
 #include <string.h>
-#include <time.h>
 
-#define ADRESSE_IP_INTERFACE_SERVEUR "127.0.0.1"  // Adresse IP du serveur
-#define PORT 8080  // Le port sur lequel le serveur écoute
-#define TAILLE_TABLEAU (1<<28)  // Taille du tableau à envoyer (2^28 éléments)
+#define TAILLE_TABLEAU (1<<10) // Taille du tableau des occurences (2^28 éléments)
 #define NBR_PROCESSUS 6         // Nombre de processus
 #define NBR_CYCLES 10             // Nombre de cycles
-#define NBR_RANDOMS (1000000000L) // Nombres aléatoires par cycle (10 milliard)
-#define SHM_KEY 0x12          // Clé pour la mémoire partagée
-#define K 1024       // Taille d'un bloc pour le pliage (pour generer le csv Index,Occurence avoir une allure de la courbe )
-#define NBR_CASES 4800        // Nombre de case pour calculer la moyenne (MaxO - Min0)
+#define NBR_RANDOMS (10000000L) // Nombres de nombres aléatoires à générer par cycle (10 milliards)
+#define SHM_KEY 0x4052          // Clé pour la mémoire partagée
 
-struct sembuf bloquer_semaphore = {0, -1, 0};   // Décrémenter sémaphore (verrouiller)
+// Déclaration des variables globales
+
+// Variable pour stocker le message formater avec sprintf pour inclure des variables dans les logs afin d'avoir un log riche
+char message_log[600];
+
+struct sembuf bloquer_semaphore = {0, -1, 0}; // Décrémenter sémaphore (verrouiller)
 struct sembuf debloquer_semaphore = {0, 1, 0}; // Incrémenter sémaphore (déverrouiller)
 
-double moyenne=0; // Moyenne (Max - Min) / NBR_CASES
-long long maxOccurence=0; // l'occurence la plus grande
-long long minOccurence=0; // l'occurence la plus petite
-long long nbr_cases_theorique  = 240000000000LL;  // Nombre de case theorique pour calculer la moyenne (MaxO - Min0) 2400 milliard
+// Fonction pour afficher le contenu d'un fichier texte
+/*
+ * Cette fonction ouvre le fichier spécifié, lit son contenu ligne par ligne et l'affiche à l'écran.
+ */
+void afficherFichier(const char *nomFichier) {
+    FILE *file = fopen(nomFichier, "r");
+    if (file == NULL) {
+        perror("Erreur lors de l'ouverture du fichier");
+    }
 
-// FONCTIONS UTILISES
+    // Lecture et affichage ligne par ligne
+    char line[256];
+    while (fgets(line, sizeof(line), file) != NULL) {
+        printf("%s", line);
+    }
 
-// Fonction pour generer une graine le plus unique possible
-unsigned int generer_graine() {
-    unsigned int graine = 0;
-
-        graine = (unsigned int)(time(NULL) ^ getpid());
-
-    return graine;
+    fclose(file);
 }
 
-// Fonction pour générer les nombres aléatoires et synchroniser
-void generer_randoms(int process_id, int *tableau_IPC, int sem_id) {
+// Fonction pour obtenir l'heure actuelle sous forme de chaîne formatée
+/*
+ * Cette fonction récupère l'heure actuelle du système et la formate sous la forme "[HH:MM:SS]".
+ */
+void obtenir_temps_actuel(char *buffer, size_t taille) {
+    time_t rawtime;
+    struct tm *timeinfo;
+    time(&rawtime);
+    timeinfo = localtime(&rawtime);
+    strftime(buffer, taille, "[%H:%M:%S]", timeinfo);
+}
+
+// Fonction de log qui écrit à la fois dans la console et dans un fichier
+/*
+ * Cette fonction permet d'enregistrer des logs à la fois dans la console et dans un fichier texte.
+ * Elle utilise un format spécifié par l'utilisateur et ajoute un horodatage à chaque message.
+ */
+void log_printf(const char *format, ...) {
+    char temps_actuel[11]; // Buffer pour stocker l'heure formatée [HH:MM:SS]
+    obtenir_temps_actuel(temps_actuel, sizeof(temps_actuel));
+    // Ouvrir le fichier en mode ajout
+    FILE *logfile = fopen("log/client/log.txt", "a");
+    if (logfile == NULL) {
+        perror("Erreur lors de l'ouverture du fichier de log");
+    }
+    // Initialisation de la liste des arguments variables
+    va_list args;
+    va_start(args, format);
+    // Affichage du message sur la console
+    printf("%s ", temps_actuel);
+    vprintf(format, args);
+    // Écriture du message dans le fichier de log
+    fprintf(logfile, "%s ", temps_actuel);
+    vfprintf(logfile, format, args);
+    // Terminer la liste des arguments variables
+    va_end(args);
+    // Fermer le fichier
+    fclose(logfile);
+}
+
+// Fonction pour générer et synchroniser les nombres aléatoires pour les processus
+/*
+ * Cette fonction génère des nombres aléatoires et les synchronise à l'aide d'un sémaphore.
+ * Elle crée un tableau local pour chaque processus, génère des nombres aléatoires,
+ * et les ajoute au tableau IPC partagé, tout en respectant la synchronisation entre les processus.
+ */
+void generer_synchroniser_randoms(int process_id, int *tableau_IPC, int sem_id) {
+    // Allocation dynamique de mémoire pour le tableau local
     int *tableau_local = malloc(TAILLE_TABLEAU * sizeof(int));
+
     if (tableau_local == NULL) {
+        // Affichage d'un message d'erreur en cas d'échec de l'allocation mémoire
         perror("Erreur d'allocation mémoire pour le tableau local");
+        snprintf(message_log, sizeof(message_log),
+                 "Erreur ~ Erreur d'allocation mémoire pour le tableau local du processus %d \n", process_id);
+        log_printf(message_log);
+
         exit(1);
     }
 
+    // Initialisation du tableau local avec des zéros
     memset(tableau_local, 0, TAILLE_TABLEAU * sizeof(int));
 
+    // Structures pour mesurer le temps de début et de fin
     struct timeval start, end;
-    gettimeofday(&start, NULL);
+    gettimeofday(&start, NULL); // Obtenir le temps actuel
 
+    // Boucle pour chaque cycle de génération de nombres aléatoires
     for (int j = 0; j < NBR_CYCLES; ++j) {
+        snprintf(message_log, sizeof(message_log), "Info ~ Processus %d : Synchronisation cycle %d ...\n", process_id,
+                 j + 1);
+        log_printf(message_log);
 
+        // Génération des nombres aléatoires et mise à jour du tableau local
         for (long i = 0; i < NBR_RANDOMS; i++) {
             int rand_num = random() % TAILLE_TABLEAU;
             tableau_local[rand_num]++;
         }
 
+        /* Utilisation d'une une granularité grossière.
+           * Pour la synchronisation des processus, nous avons choisi d'utiliser une granularité grossière. Cela signifie que l'accès au tableau IPC
+           * est verrouillé dans son ensemble pendant que chaque processus effectue ses mises à jour. Bien que cette approche puisse entraîner des temps d'attente
+          * plus longs pour les autres processus, elle simplifie la gestion de la synchronisation en évitant les conflits au niveau des éléments individuels du tableau.
+        */
+
         // Synchronisation avec le tableau global
-        semop(sem_id, &bloquer_semaphore, 1); // Verrouillage
+        semop(sem_id, &bloquer_semaphore, 1); // Verrouillage du sémaphore
         for (int i = 0; i < TAILLE_TABLEAU; i++) {
             tableau_IPC[i] += tableau_local[i];
         }
-        semop(sem_id, &debloquer_semaphore, 1); // Déverrouillage
+        semop(sem_id, &debloquer_semaphore, 1); // Déverrouillage du sémaphore
 
-        printf("Processus %d : synchronisation cycle %d terminée\n", process_id, j + 1);
+        snprintf(message_log, sizeof(message_log), "Succes ~ Processus %d : Synchronisation cycle %d terminée\n",
+                 process_id, j + 1);
+        log_printf(message_log);
 
+        // Réinitialisation du tableau local pour le prochain cycle
         memset(tableau_local, 0, TAILLE_TABLEAU * sizeof(int));
     }
 
+    // Obtenir le temps actuel après la fin de tous les cycles
     gettimeofday(&end, NULL);
 
+    // Calcul du temps écoulé en secondes
     double elapsed_time = (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec) / 1000000.0;
 
-    printf("Processus %d : génération et synchronisation terminées en %.2f secondes\n", process_id, elapsed_time);
+    // Affichage du temps total écoulé pour la génération et la synchronisation
 
+    snprintf(message_log, sizeof(message_log),"Succes ~ Processus %d : Génération et synchronisation terminées en %.2f secondes\n", process_id,elapsed_time);
+    log_printf(message_log);
+
+    // Libération de la mémoire allouée pour le tableau local
     free(tableau_local);
 }
 
-// Fonction pour créer un fichier CSV et y enregistrer les données du tableau IPC (Index,Occurence)
-void generer_csv_index_occurence(int *tableau, int taille) {
-    char nom_fichier[256];
-    // Créer un nom de fichier unique basé sur le compteur des clients traités
-    snprintf(nom_fichier, sizeof(nom_fichier), "donnees_analyse.csv");
 
+int main(int argc, char *argv[]) {
 
-    // Ouvrir le fichier en mode écriture
-    FILE *file = fopen(nom_fichier, "w");
-    if (file == NULL) {
-        perror("Erreur lors de la création du fichier");
-        return;
+    /*
+ * PARTIE 0 - Lancement du programme Client
+ * Il prend en entrée deux arguments :
+ * 1. Le format `adresseIP:port` : Une chaîne de caractères qui spécifie l'adresse IP et le port du serveur
+ * auquel le tableau IPC seras transmit.
+ */
+
+    // Vérification du nombre d'arguments
+    if (argc < 2) {
+        /*
+         * Si l'utilisateur n'a pas fourni suffisamment d'arguments,
+         * nous affichons un message d'erreur et terminons le programme
+         * avec un code de retour non nul (par exemple, 1).
+         *
+         * Pour un bon usage, l'utilisateur doit lancer le programme avec :
+         * ./programme adresseIP:port
+         */
+        snprintf(message_log, sizeof(message_log),
+                 "Erreur ~ Le programme doit prendre exactement un argument : adresseIP:port\n");
+        log_printf(message_log);
+
+        snprintf(message_log, sizeof(message_log), "Info ~ Exemple : ./programme 127.0.0.1:8080\n");
+        log_printf(message_log);
+
+        return 1;
     }
 
-    // Enregistrer les données dans le fichier CSV
-    fprintf(file, "Index,Occurence\n");  // Entête du CSV
+    // Extraction de l'argument (format attendu : adresseIP:port)
+    char *input = argv[1]; // Premier argument après le nom du programme
+    char *separator = strchr(input, ':'); // Recherche du caractère ':'
 
-    for (unsigned int i = 0; i < taille; i++) {
-        fprintf(file, "%d,%d\n", i, tableau[i]);  // Valeur (index) et pourcentage
+    if (separator == NULL) {
+        /*
+         * Si le caractère ':' n'est pas trouvé dans l'argument,
+         * cela signifie que le format fourni par l'utilisateur est incorrect.
+         * Nous affichons un message d'erreur et terminons le programme.
+         */
+
+        snprintf(message_log, sizeof(message_log), "Erreur ~ Format invalide, utilisez le format adresseIP:port \n");
+        log_printf(message_log);
+
+        snprintf(message_log, sizeof(message_log), "Info ~ Exemple : ./programme 127.0.0.1:8080\n");
+        log_printf(message_log);
+
+        return 1;
     }
 
+    // Séparation de l'adresse IP et du port
+    *separator = '\0'; // Remplace ':' par '\0' pour diviser la chaîne
+    char *adresse_ip_serveur = input; // La partie avant ':' devient l'adresse IP
+    char *port_serveur_str = separator + 1;
+    // La partie après ':' devient (le port) car c'est en string faudras le convertir
 
-    // Fermer le fichier après l'enregistrement
-    fclose(file);
+    // Conversion de la chaîne de caractères en entier pour le port
+    // La fonction atoi() transforme la chaîne `port_serveur_str` en un entier (int) qui représente le numéro de port
+    int port_serveur = atoi(port_serveur_str); // Port du serveur
 
-    printf("Données sauvegardées dans le fichier %s\n", nom_fichier);
-}
+    // Vérification des valeurs extraites
+    if (strlen(adresse_ip_serveur) == 0 || strlen(port_serveur_str) == 0 || port_serveur <= 0 || port_serveur > 65535) {
+        /*
+         * Si l'adresse IP ou le port sont vides, cela indique que l'utilisateur
+         * a fourni un format incomplet, par exemple ":8080" ou "127.0.0.1:".
+         * Nous affichons un message d'erreur et terminons le programme.
+         */
 
-// Fonction pour effectuer le pliage
-int* plier_tableau( int* tableau,  int taille,  int taille_bloc,  int* nouvelle_taille) {
-    // Calcul de la taille du tableau réduit
-    *nouvelle_taille = taille / taille_bloc;
-    int* tableau_reduit = malloc(*nouvelle_taille * sizeof(int));
-    if (!tableau_reduit) {
-        perror("Erreur d'allocation mémoire pour le tableau réduit");
-        return NULL;
+        snprintf(message_log, sizeof(message_log),
+                 "Erreur ~ L'adresse IP ou le port est invalide. Assurez-vous d'utiliser le format adresseIP:port.\n");
+        log_printf(message_log);
+
+        snprintf(message_log, sizeof(message_log), "Info ~ Exemple : ./programme 127.0.0.1:8080\n");
+        log_printf(message_log);
+        return 1;
     }
 
-    // Pliage : somme des valeurs dans des blocs de taille taille_bloc
-    for (unsigned int i = 0; i < *nouvelle_taille; i++) {
-        unsigned int somme = 0;
-        for (unsigned int j = 0; j < taille_bloc; j++) {
-            somme += tableau[i * taille_bloc + j];
-        }
-        tableau_reduit[i] = somme; // Stocke la somme ou une autre statistique
-    }
-
-    return tableau_reduit;
-}
-
-// Fonction pour trouver le maxOccurence
-long long trouver_maxOccurence(int *tableau, int taille) {
-    // Initialisation de la valeur maximale avec le premier élément du tableau
-    long long valeur_max = tableau[0];
-
-    // Parcourir le tableau à partir du deuxième élément
-    for (int i = 1; i < taille; i++) {
-        // Si la valeur actuelle est plus grande que la valeur maximale trouvée jusqu'à présent
-        if (tableau[i] > valeur_max) {
-            // Mettre à jour la valeur maximale
-            valeur_max = tableau[i];
-        }
-    }
-
-    return valeur_max;
-}
-
-// Fonction pour trouver le minOccurence
-long long trouver_minOccurence(int *tableau, int taille) {
-    // Initialisation de la valeur minimale avec le premier élément du tableau
-    long long valeur_min = tableau[0];
-
-    // Parcourir le tableau à partir du deuxième élément
-    for (int i = 1; i < taille; i++) {
-        // Si la valeur actuelle est plus petite que la valeur minimale trouvée jusqu'à présent
-        if (tableau[i] < valeur_min) {
-            // Mettre à jour la valeur minimale
-            valeur_min = tableau[i];
-        }
-    }
-
-    return valeur_min;
-}
+    snprintf(message_log, sizeof(message_log), "Succes ~ Format valide. Adresse IP : %s, Port : %s\n",
+             adresse_ip_serveur, port_serveur_str);
+    log_printf(message_log);
 
 
-int main() {
+    /*
+     * PARTIE 1 - Initialisation et affichage
+     * Cette partie affiche un message de bienvenue à partir d'un fichier.
+     * et démarre le client.
+     */
 
-    printf("DEMMARAGE DU CLIENT 1.... \n");
+    afficherFichier("text/client/text_bienvenu.txt");
 
+    // Affichage d'un message au début du lancement du programme client
+    log_printf("Info ~ Lancement du programme client... \n");
 
-    // PARTIE 1 - IPC (Communication Inter-Processus)
+    /*
+     * PARTIE 2 - Mémoire partagée et sémaphores
+     * Dans cette section, nous créons un segment de mémoire partagée,
+     * un sémaphore pour la synchronisation et nous initialisons le tableau partagé.
+     */
+
     pid_t pid;
     int shm_id, sem_id;
     int *tableau_IPC;
 
+    log_printf("Info ~ Création d'un segment de mémoire partagée... \n");
+
     // Création d'un segment de mémoire partagée
     shm_id = shmget(SHM_KEY, TAILLE_TABLEAU * sizeof(int), IPC_CREAT | 0666);
     if (shm_id == -1) {
+        snprintf(message_log, sizeof(message_log),
+                 "Erreur ~ Impossible de créer un segment de mémoire partagée (shmget)");
+        log_printf(message_log);
         perror("Erreur shmget");
         exit(1);
     }
 
+    log_printf("Succes ~ Création d'un segment de mémoire partagée \n");
+
+    snprintf(message_log, sizeof(message_log),
+             "Info ~ Attachement du segment de mémoire partagée au processus courant %d ... \n", getpid());
+    log_printf(message_log);
+
     // Attachement du segment de mémoire partagée au processus courant
-    tableau_IPC = (int *)shmat(shm_id, NULL, 0);
-    if (tableau_IPC == (void *)-1) {
+    tableau_IPC = (int *) shmat(shm_id, NULL, 0);
+    if (tableau_IPC == (void *) -1) {
+        snprintf(message_log, sizeof(message_log),
+                 "Erreur ~ Échec de l'attachement du segment de mémoire partagée au processus courant %d", getpid());
+        log_printf(message_log);
         perror("Erreur shmat");
         exit(1);
     }
 
+    snprintf(message_log, sizeof(message_log),
+             "Succes ~ Attachement du segment de mémoire partagée au processus courant %d \n", getpid());
+    log_printf(message_log);
+
+    log_printf("Info ~ Initialisation du tableau partagé avec des zéros... \n");
+
     // Initialisation du tableau partagé avec des zéros
     memset(tableau_IPC, 0, TAILLE_TABLEAU * sizeof(int));
+
+    log_printf("Succes ~ Initialisation du tableau partagé avec des zéros \n");
 
     // Création d'un sémaphore pour la synchronisation des processus
     sem_id = semget(IPC_PRIVATE, 1, IPC_CREAT | 0666);
     if (sem_id == -1) {
+        snprintf(message_log, sizeof(message_log), "Erreur ~ Impossible de créer un sémaphore (semget)");
+        log_printf(message_log);
         perror("Erreur semget");
         exit(1);
     }
@@ -204,115 +337,150 @@ int main() {
     semctl(sem_id, 0, SETVAL, 1);
 
 
-    printf("Calcul en cours.... \n");
+    /*
+     * PARTIE 3 - Création des processus enfants
+     * Cette partie gère la création et la synchronisation de plusieurs processus
+     * enfants qui génèrent des nombres aléatoires.
+     */
 
 
-    // Création de processus enfants
+    log_printf("Info ~ Creations des proccesus enfant en cours...\n");
+
+
     for (int p = 0; p < NBR_PROCESSUS; p++) {
         pid = fork();
-        if (pid == 0) { // Processus enfant
-            srand(generer_graine()); // Initialisation d'une graine pour les nombres aléatoires
-            generer_randoms(p, tableau_IPC, sem_id); // Génération de nombres aléatoires
+        if (pid == 0) {
+            snprintf(message_log, sizeof(message_log), "Info ~ Processus %d Genere des nombre aleatoires...\n", p);
+            log_printf(message_log);
+
+            // Processus enfant
+            srand(getpid()); // Initialisation d'une graine pour les nombres aléatoires
+
+            generer_synchroniser_randoms(p, tableau_IPC, sem_id);
+            //shmdt(tableau_IPC); // Détachement de la mémoire partagée
+
+            snprintf(message_log, sizeof(message_log), "Succes ~ Processus %d Genere des nombre aleatoires\n", p);
+            log_printf(message_log);
             shmdt(tableau_IPC); // Détachement de la mémoire partagée
+
             exit(0); // Terminaison du processus enfant
         }
     }
+
 
     // Attente de la fin de tous les processus enfants
     for (int p = 0; p < NBR_PROCESSUS; p++) {
         wait(NULL);
     }
 
-    // Calculer la valeur maximale d'occurrence dans le tableau IPC
-    maxOccurence = trouver_maxOccurence(tableau_IPC, TAILLE_TABLEAU);
+    log_printf("Succes ~ Génération de nombres aléatoires terminée par tout les procces \n");
 
-    // Calculer la valeur minimale d'occurrence dans le tableau IPC
-    minOccurence = trouver_minOccurence(tableau_IPC, TAILLE_TABLEAU);
+    /*
+     * PARTIE 4 - Création et configuration de la socket
+     * Cette section initialise une socket, se connecte au serveur
+     * et envoie le tableau partagé IPC.
+     */
 
-    // Calculer la moyenne
-    moyenne = (double)(maxOccurence - minOccurence) / nbr_cases_theorique;
+    log_printf("Info ~ Preparation envoie du tableau IPC au serveur... \n");
 
-    // Affichage des 10 premières valeurs du tableau partagé
-    printf("Distribution des nombres (10 premières cases) :\n");
-    for (int i = 0; i < 10; i++) {
-        printf("Nombre %d : %d occurrences\n", i, tableau_IPC[i]);
-    }
 
-    // Affichage des statistiques : valeur maximale, minimale et moyenne d'occurrences
-    printf("Valeur maximale : %lld\n", maxOccurence);
-    printf("Valeur minimale : %lld\n", minOccurence);
-    printf("Moyenne des occurrences : %f\n", moyenne);
+    int sock = 0; // Déclaration de la variable pour la socket
+    struct sockaddr_in serv_addr; // Déclaration de la structure pour les informations de l'adresse du serveur
 
-    // PARTIE 2 - Création et configuration de la socket
+    log_printf("Info ~ Création de la socket... \n");
 
-    int sock = 0;  // Déclaration de la variable pour la socket
-    struct sockaddr_in serv_addr;  // Déclaration de la structure pour les informations de l'adresse du serveur
 
     // Créer une nouvelle socket de communication réseau
     if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
+        snprintf(message_log, sizeof(message_log), "Erreur ~ Impossible de créer une socket");
+        log_printf(message_log);
         perror("Erreur de création de la socket");
         return -1;
     }
 
-    // Initialiser les informations de l'adresse du serveur
-    serv_addr.sin_family = AF_INET;  // Spécifier le domaine d'adresse IPv4
-    serv_addr.sin_port = htons(PORT);  // Convertir la valeur du port de l'ordre réseau à l'ordre machine pour le réseau (Convertion en BigEndian)
+    log_printf("Succes ~ Création de la socket... \n");
 
+    log_printf("Info ~ Verification validite adresse ip du serveur... \n");
+
+
+    // Initialiser les informations de l'adresse du serveur
+    serv_addr.sin_family = AF_INET; // Spécifier le domaine d'adresse IPv4
+    serv_addr.sin_port = htons(port_serveur); // Convertir la valeur du port à l'ordre réseau (BigEndian)
 
     // Conversion de l'adresse IP en format binaire
-    if (inet_pton(AF_INET, ADRESSE_IP_INTERFACE_SERVEUR, &serv_addr.sin_addr) <= 0) {
+    if (inet_pton(AF_INET, adresse_ip_serveur, &serv_addr.sin_addr) <= 0) {
+        snprintf(message_log, sizeof(message_log), "Erreur ~ Adresse du serveur invalide");
+        log_printf(message_log);
         perror("Adresse du serveur invalide");
         return -1;
     }
 
+    log_printf("Succes ~ Verification validite adresse ip du serveur \n");
+
+
+    snprintf(message_log, sizeof(message_log), "Info ~ Connexion au serveur : %s ...\n", adresse_ip_serveur);
+    log_printf(message_log);
+
+
     // Connexion au serveur
-    if (connect(sock, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0) {
+    if (connect(sock, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0) {
+        snprintf(message_log, sizeof(message_log), "Erreur ~ Échec de la connexion au serveur");
+        log_printf(message_log);
         perror("Échec de la connexion au serveur");
         return -1;
     }
 
-    printf("Connecté au serveur : %s \n", ADRESSE_IP_INTERFACE_SERVEUR);
+    snprintf(message_log, sizeof(message_log), "Succes ~ Connexion au serveur : %s \n", adresse_ip_serveur);
+    log_printf(message_log);
+
+    log_printf("Info ~ Envoi du tableau IPC au serveur... \n");
+
 
     // Envoi du tableau partagé IPC au serveur
-    int taille_total_tableau = TAILLE_TABLEAU * sizeof(int);
-    int taille_total_tableau_envoyer = send(sock, tableau_IPC, taille_total_tableau, 0);
 
-    if (taille_total_tableau_envoyer < 0) {
+    if (send(sock, tableau_IPC, TAILLE_TABLEAU * sizeof(int), 0) == -1) {
+        snprintf(message_log, sizeof(message_log), "Erreur ~ Échec lors de l'envoi du tableau IPC");
+        log_printf(message_log);
         perror("Erreur lors de l'envoi des données");
-    } else if (taille_total_tableau_envoyer < taille_total_tableau) {
-        fprintf(stderr, "Données partiellement envoyées : %d/%d octets\n", taille_total_tableau_envoyer, taille_total_tableau);
     } else {
-        printf("Données envoyées avec succès (%d octets)\n", taille_total_tableau_envoyer);
+        snprintf(message_log, sizeof(message_log), "Succes ~ Tableau IPC envoyées avec succès au serveur %s \n",
+                 adresse_ip_serveur);
+        log_printf(message_log);
     }
 
-    // Réception d'une confirmation du serveur
-    int confimation;
-    int bytes_recu  = recv(sock, &confimation, sizeof(confimation), 0);
-    if (bytes_recu  < 0) {
-        perror("Erreur lors de la réception de la confirmation");
-    }
-    if (confimation == 1) {
-        printf("Confirmation reçue du serveur : OK \n");
-    }
 
-    // PARTIE 3 - Sauvegarder les donnees
+    /*
+     * PARTIE 5 - Nettoyage des ressources
+     * Ici, nous libérons les ressources allouées :
+     * mémoire partagée, sémaphore, et fermeture de la socket.
+     */
 
-    // Appel de la fonction plier_tableau pour reduire la taille du tableau et generer un fichier CSV
-    int taille_tableau_plier;
-    int* tableau_plier = plier_tableau(tableau_IPC, TAILLE_TABLEAU, K, &taille_tableau_plier);
 
-    // Génération d'un fichier CSV avec les indices et occurrences
-    generer_csv_index_occurence(tableau_plier, taille_tableau_plier);
+    log_printf("Info ~ Nettoyage des ressources... \n");
 
-    // PARTIE 4 - Nettoyage des ressources
 
     shmdt(tableau_IPC); // Détachement de la mémoire partagée
     shmctl(shm_id, IPC_RMID, NULL); // Suppression de la mémoire partagée
     semctl(sem_id, 0, IPC_RMID); // Suppression du sémaphore
 
+    log_printf("Succes ~ Nettoyage des ressources... \n");
+
+    log_printf("Info ~ Deconnexion au serveur... \n");
+
     // Fermeture de la connexion au serveur
     close(sock);
-    printf("Déconnecté du serveur : %s \n", ADRESSE_IP_INTERFACE_SERVEUR);
+
+    snprintf(message_log, sizeof(message_log), "Succes ~ Déconnecté du serveur : %s \n", adresse_ip_serveur);
+    log_printf(message_log);
+
+    log_printf("Succes ~ Programme Client terminer \n");
+
+    printf("\n\n");
+    afficherFichier("text/client/text_fin.txt");
+    printf("\n\n");
+
+
+    // Fin du programme client
 
     return 0;
 }
