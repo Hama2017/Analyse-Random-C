@@ -129,54 +129,6 @@ projetSystemeComplet/fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/projetSystemeComplet.dir/build.make CMakeFiles/projetSystemeComplet.dir/build
 .PHONY : projetSystemeComplet/fast
 
-arrete.o: arrete.c.o
-.PHONY : arrete.o
-
-# target to build an object file
-arrete.c.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/projetSystemeComplet.dir/build.make CMakeFiles/projetSystemeComplet.dir/arrete.c.o
-.PHONY : arrete.c.o
-
-arrete.i: arrete.c.i
-.PHONY : arrete.i
-
-# target to preprocess a source file
-arrete.c.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/projetSystemeComplet.dir/build.make CMakeFiles/projetSystemeComplet.dir/arrete.c.i
-.PHONY : arrete.c.i
-
-arrete.s: arrete.c.s
-.PHONY : arrete.s
-
-# target to generate assembly for a file
-arrete.c.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/projetSystemeComplet.dir/build.make CMakeFiles/projetSystemeComplet.dir/arrete.c.s
-.PHONY : arrete.c.s
-
-client.o: client.c.o
-.PHONY : client.o
-
-# target to build an object file
-client.c.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/projetSystemeComplet.dir/build.make CMakeFiles/projetSystemeComplet.dir/client.c.o
-.PHONY : client.c.o
-
-client.i: client.c.i
-.PHONY : client.i
-
-# target to preprocess a source file
-client.c.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/projetSystemeComplet.dir/build.make CMakeFiles/projetSystemeComplet.dir/client.c.i
-.PHONY : client.c.i
-
-client.s: client.c.s
-.PHONY : client.s
-
-# target to generate assembly for a file
-client.c.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/projetSystemeComplet.dir/build.make CMakeFiles/projetSystemeComplet.dir/client.c.s
-.PHONY : client.c.s
-
 main.o: main.c.o
 .PHONY : main.o
 
@@ -201,78 +153,6 @@ main.c.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/projetSystemeComplet.dir/build.make CMakeFiles/projetSystemeComplet.dir/main.c.s
 .PHONY : main.c.s
 
-s.o: s.c.o
-.PHONY : s.o
-
-# target to build an object file
-s.c.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/projetSystemeComplet.dir/build.make CMakeFiles/projetSystemeComplet.dir/s.c.o
-.PHONY : s.c.o
-
-s.i: s.c.i
-.PHONY : s.i
-
-# target to preprocess a source file
-s.c.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/projetSystemeComplet.dir/build.make CMakeFiles/projetSystemeComplet.dir/s.c.i
-.PHONY : s.c.i
-
-s.s: s.c.s
-.PHONY : s.s
-
-# target to generate assembly for a file
-s.c.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/projetSystemeComplet.dir/build.make CMakeFiles/projetSystemeComplet.dir/s.c.s
-.PHONY : s.c.s
-
-serveur.o: serveur.c.o
-.PHONY : serveur.o
-
-# target to build an object file
-serveur.c.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/projetSystemeComplet.dir/build.make CMakeFiles/projetSystemeComplet.dir/serveur.c.o
-.PHONY : serveur.c.o
-
-serveur.i: serveur.c.i
-.PHONY : serveur.i
-
-# target to preprocess a source file
-serveur.c.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/projetSystemeComplet.dir/build.make CMakeFiles/projetSystemeComplet.dir/serveur.c.i
-.PHONY : serveur.c.i
-
-serveur.s: serveur.c.s
-.PHONY : serveur.s
-
-# target to generate assembly for a file
-serveur.c.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/projetSystemeComplet.dir/build.make CMakeFiles/projetSystemeComplet.dir/serveur.c.s
-.PHONY : serveur.c.s
-
-test.o: test.c.o
-.PHONY : test.o
-
-# target to build an object file
-test.c.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/projetSystemeComplet.dir/build.make CMakeFiles/projetSystemeComplet.dir/test.c.o
-.PHONY : test.c.o
-
-test.i: test.c.i
-.PHONY : test.i
-
-# target to preprocess a source file
-test.c.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/projetSystemeComplet.dir/build.make CMakeFiles/projetSystemeComplet.dir/test.c.i
-.PHONY : test.c.i
-
-test.s: test.c.s
-.PHONY : test.s
-
-# target to generate assembly for a file
-test.c.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/projetSystemeComplet.dir/build.make CMakeFiles/projetSystemeComplet.dir/test.c.s
-.PHONY : test.c.s
-
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -282,24 +162,9 @@ help:
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
 	@echo "... projetSystemeComplet"
-	@echo "... arrete.o"
-	@echo "... arrete.i"
-	@echo "... arrete.s"
-	@echo "... client.o"
-	@echo "... client.i"
-	@echo "... client.s"
 	@echo "... main.o"
 	@echo "... main.i"
 	@echo "... main.s"
-	@echo "... s.o"
-	@echo "... s.i"
-	@echo "... s.s"
-	@echo "... serveur.o"
-	@echo "... serveur.i"
-	@echo "... serveur.s"
-	@echo "... test.o"
-	@echo "... test.i"
-	@echo "... test.s"
 .PHONY : help
 
 

@@ -3,9 +3,4 @@ project(projetSystemeComplet C)
 
 set(CMAKE_C_STANDARD 23)
 
-add_executable(projetSystemeComplet main.c
-        s.c
-        client.c
-        test.c
-        serveur.c
-        arrete.c)
+add_executable(projetSystemeComplet main.c)

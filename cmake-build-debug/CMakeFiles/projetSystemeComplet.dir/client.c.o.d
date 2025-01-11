@@ -1,5 +1,12 @@
 CMakeFiles/projetSystemeComplet.dir/client.c.o: \
   /Users/hamaba/Desktop/projetc/etude_fonction_rand_c/client.c \
+  /Library/Developer/CommandLineTools/usr/lib/clang/16/include/stdarg.h \
+  /Library/Developer/CommandLineTools/usr/lib/clang/16/include/__stdarg_header_macro.h \
+  /Library/Developer/CommandLineTools/usr/lib/clang/16/include/__stdarg___gnuc_va_list.h \
+  /Library/Developer/CommandLineTools/usr/lib/clang/16/include/__stdarg_va_list.h \
+  /Library/Developer/CommandLineTools/usr/lib/clang/16/include/__stdarg_va_arg.h \
+  /Library/Developer/CommandLineTools/usr/lib/clang/16/include/__stdarg___va_copy.h \
+  /Library/Developer/CommandLineTools/usr/lib/clang/16/include/__stdarg_va_copy.h \
   /Library/Developer/CommandLineTools/SDKs/MacOSX15.0.sdk/usr/include/stdio.h \
   /Library/Developer/CommandLineTools/SDKs/MacOSX15.0.sdk/usr/include/_stdio.h \
   /Library/Developer/CommandLineTools/SDKs/MacOSX15.0.sdk/usr/include/sys/cdefs.h \

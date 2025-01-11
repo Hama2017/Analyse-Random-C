@@ -1,7 +1,6 @@
 CMakeFiles/projetSystemeComplet.dir/serveur.c.o: \
   /Users/hamaba/Desktop/projetc/etude_fonction_rand_c/serveur.c \
-  /Library/Developer/CommandLineTools/SDKs/MacOSX15.0.sdk/usr/include/stdio.h \
-  /Library/Developer/CommandLineTools/SDKs/MacOSX15.0.sdk/usr/include/_stdio.h \
+  /Library/Developer/CommandLineTools/SDKs/MacOSX15.0.sdk/usr/include/math.h \
   /Library/Developer/CommandLineTools/SDKs/MacOSX15.0.sdk/usr/include/sys/cdefs.h \
   /Library/Developer/CommandLineTools/SDKs/MacOSX15.0.sdk/usr/include/sys/_symbol_aliasing.h \
   /Library/Developer/CommandLineTools/SDKs/MacOSX15.0.sdk/usr/include/sys/_posix_availability.h \
@@ -9,6 +8,15 @@ CMakeFiles/projetSystemeComplet.dir/serveur.c.o: \
   /Library/Developer/CommandLineTools/SDKs/MacOSX15.0.sdk/usr/include/AvailabilityVersions.h \
   /Library/Developer/CommandLineTools/SDKs/MacOSX15.0.sdk/usr/include/AvailabilityInternal.h \
   /Library/Developer/CommandLineTools/SDKs/MacOSX15.0.sdk/usr/include/AvailabilityInternalLegacy.h \
+  /Library/Developer/CommandLineTools/usr/lib/clang/16/include/stdarg.h \
+  /Library/Developer/CommandLineTools/usr/lib/clang/16/include/__stdarg_header_macro.h \
+  /Library/Developer/CommandLineTools/usr/lib/clang/16/include/__stdarg___gnuc_va_list.h \
+  /Library/Developer/CommandLineTools/usr/lib/clang/16/include/__stdarg_va_list.h \
+  /Library/Developer/CommandLineTools/usr/lib/clang/16/include/__stdarg_va_arg.h \
+  /Library/Developer/CommandLineTools/usr/lib/clang/16/include/__stdarg___va_copy.h \
+  /Library/Developer/CommandLineTools/usr/lib/clang/16/include/__stdarg_va_copy.h \
+  /Library/Developer/CommandLineTools/SDKs/MacOSX15.0.sdk/usr/include/stdio.h \
+  /Library/Developer/CommandLineTools/SDKs/MacOSX15.0.sdk/usr/include/_stdio.h \
   /Library/Developer/CommandLineTools/SDKs/MacOSX15.0.sdk/usr/include/_types.h \
   /Library/Developer/CommandLineTools/SDKs/MacOSX15.0.sdk/usr/include/sys/_types.h \
   /Library/Developer/CommandLineTools/SDKs/MacOSX15.0.sdk/usr/include/machine/_types.h \

@@ -34,13 +34,12 @@
 #include <sys/time.h>
 #include <string.h>
 
-#define TAILLE_TABLEAU (1<<10) // Taille du tableau des occurences (2^28 éléments)
+#define TAILLE_TABLEAU (1024) // Taille du tableau des occurences (2^28 éléments)
 #define NBR_PROCESSUS 6         // Nombre de processus
 #define NBR_CYCLES 10             // Nombre de cycles
-#define NBR_RANDOMS (10000000L) // Nombres de nombres aléatoires à générer par cycle (10 milliards)
-#define SHM_KEY 0x4052          // Clé pour la mémoire partagée
+#define NBR_RANDOMS (100) // Nombres de nombres aléatoires à générer par cycle (10 milliards)
+#define SHM_KEY 0x44552          // Clé pour la mémoire partagée
 
-// Déclaration des variables globales
 
 // Variable pour stocker le message formater avec sprintf pour inclure des variables dans les logs afin d'avoir un log riche
 char message_log[600];
@@ -197,7 +196,6 @@ int main(int argc, char *argv[]) {
         /*
          * Si l'utilisateur n'a pas fourni suffisamment d'arguments,
          * nous affichons un message d'erreur et terminons le programme
-         * avec un code de retour non nul (par exemple, 1).
          *
          * Pour un bon usage, l'utilisateur doit lancer le programme avec :
          * ./programme adresseIP:port
@@ -214,9 +212,9 @@ int main(int argc, char *argv[]) {
 
     // Extraction de l'argument (format attendu : adresseIP:port)
     char *input = argv[1]; // Premier argument après le nom du programme
-    char *separator = strchr(input, ':'); // Recherche du caractère ':'
+    char *separateur = strchr(input, ':'); // Recherche du caractère ':'
 
-    if (separator == NULL) {
+    if (separateur == NULL) {
         /*
          * Si le caractère ':' n'est pas trouvé dans l'argument,
          * cela signifie que le format fourni par l'utilisateur est incorrect.
@@ -233,9 +231,9 @@ int main(int argc, char *argv[]) {
     }
 
     // Séparation de l'adresse IP et du port
-    *separator = '\0'; // Remplace ':' par '\0' pour diviser la chaîne
+    *separateur = '\0'; // Remplace ':' par '\0' pour diviser la chaîne
     char *adresse_ip_serveur = input; // La partie avant ':' devient l'adresse IP
-    char *port_serveur_str = separator + 1;
+    char *port_serveur_str = separateur + 1;
     // La partie après ':' devient (le port) car c'est en string faudras le convertir
 
     // Conversion de la chaîne de caractères en entier pour le port
@@ -270,7 +268,7 @@ int main(int argc, char *argv[]) {
      * et démarre le client.
      */
 
-    afficherFichier("text/client/text_bienvenu.txt");
+    afficherFichier("text/client/text_bienvenue.txt");
 
     // Affichage d'un message au début du lancement du programme client
     log_printf("Info ~ Lancement du programme client... \n");
@@ -384,10 +382,10 @@ int main(int argc, char *argv[]) {
     log_printf("Info ~ Preparation envoie du tableau IPC au serveur... \n");
 
 
-    int sock = 0; // Déclaration de la variable pour la socket
+    int sock = 0; // Déclaration de la variable pour stocker le descripteur de la  socket
     struct sockaddr_in serv_addr; // Déclaration de la structure pour les informations de l'adresse du serveur
 
-    log_printf("Info ~ Création de la socket... \n");
+    log_printf("Info ~ Création du socket... \n");
 
 
     // Créer une nouvelle socket de communication réseau
@@ -398,7 +396,7 @@ int main(int argc, char *argv[]) {
         return -1;
     }
 
-    log_printf("Succes ~ Création de la socket... \n");
+    log_printf("Succes ~ Création du socket... \n");
 
     log_printf("Info ~ Verification validite adresse ip du serveur... \n");
 
@@ -441,12 +439,12 @@ int main(int argc, char *argv[]) {
     if (send(sock, tableau_IPC, TAILLE_TABLEAU * sizeof(int), 0) == -1) {
         snprintf(message_log, sizeof(message_log), "Erreur ~ Échec lors de l'envoi du tableau IPC");
         log_printf(message_log);
-        perror("Erreur lors de l'envoi des données");
-    } else {
-        snprintf(message_log, sizeof(message_log), "Succes ~ Tableau IPC envoyées avec succès au serveur %s \n",
-                 adresse_ip_serveur);
-        log_printf(message_log);
+        perror("Erreur lors de l'envoi du tableau");
     }
+
+    snprintf(message_log, sizeof(message_log), "Succes ~ Tableau IPC envoyées avec succès au serveur %s \n",adresse_ip_serveur);
+    log_printf(message_log);
+
 
 
     /*
