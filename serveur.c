@@ -34,15 +34,16 @@
 #include <sys/sem.h>
 #include <sys/wait.h>
 #include <sys/time.h>
+#include <time.h>
 #include <string.h>
-#include <_regex.h>
+#include <regex.h>
 
-#define MAX_CLIENTS 5  // Le nombre maximum de clients dans la file d'attente du serveur
-#define TAILLE_TABLEAU (1024)  // Taille du tableau des occurences (2^28 éléments)
+#define MAX_CLIENTS 100  // Le nombre maximum de clients dans la file d'attente du serveur
+#define TAILLE_TABLEAU (2<<28)  // Taille du tableau des occurences (2^28 éléments)
 #define NBR_PROCESSUS 6         // Nombre de processus
 #define NBR_CYCLES 10             // Nombre de cycles
-#define NBR_RANDOMS (100) // Nombres aléatoires par cycle (10 milliard)
-#define SHM_KEY 0x15633          // Clé pour la mémoire partagée
+#define NBR_RANDOMS (1000000000LL) // Nombres aléatoires par cycle (10 milliard)
+#define SHM_KEY 0x787       // Clé pour la mémoire partagée
 #define K 1024        // Taille d'un bloc pour le pliage du tableau d'occurence (pour tracer la courbe )
 
 
@@ -62,7 +63,7 @@ long long max_occurence=0;
 long long min_occurence=0;
 
 // Le nombre de clients a traiter prevus par le serveur
-int nbrClientPrevus=1;
+int nbrClientPrevus=0;
 // Le nombre de clients traiter  par le serveur
 int nbrClientTotalTraiter=0;
 
@@ -70,7 +71,7 @@ int nbrClientTotalTraiter=0;
 // Le nombre total de nombres aléatoires à générer par tout les clients a traiter + le serveur
 // A Noter on aurez mit 1200 milliard si ont avait 1 client + le serveur
 // Pour notre cas ont a 5 client + le serveur  sa fait  6 * 600 milliard sa fait au total 3600 milliard
-long long nbr_total_rand_generer  = 1200;
+long long nbr_total_rand_generer  = 1200000000000LL;
 
 
 // Fonction pour obtenir l'heure actuelle sous forme de chaîne formatée
@@ -146,7 +147,7 @@ void afficherFichier(const char *nom_fichier) {
     FILE *file = fopen(nom_fichier, "r");
     if (file == NULL) {
         perror("Erreur lors de l'ouverture du fichier");
-        log_printf("Erreur ~ Erreur lors de l'ouverture du fichier %s \n",nom_fichier);
+        log_printf("Erreur ~ Erreur lors de l'ouverture du fichier %s \n", nom_fichier);
         exit(1);
     }
     // Buffer pour lire les lignes du fichier
@@ -277,25 +278,28 @@ void generer_synchroniser_randoms(int process_id, int *tableau_IPC, int sem_id) 
  * - La première ligne du fichier contient l'entête "Index,Occurence".
  * - Chaque ligne suivante contient un index et sa valeur associée dans le tableau.
  */
-void generer_csv_index_occurence(int *tableau, int taille) {
+void generer_csv_index_occurence(int *tableau, int taille, char *suffixe) {
     char nom_fichier[256];
     // Créer un nom de fichier
-    snprintf(nom_fichier, sizeof(nom_fichier), "CSV/donnees_index_occurence.csv");
+    snprintf(nom_fichier, sizeof(nom_fichier), "CSV/donnees_index_occurence_%s.csv", suffixe);
     // Ouvrir le fichier en mode écriture
     FILE *file = fopen(nom_fichier, "w");
     if (file == NULL) {
         perror("Erreur lors de la création du fichier");
-        log_printf( "Erreur ~ Erreur lors de l'ouverture du fichier %s \n",nom_fichier);
+        log_printf("Erreur ~ Erreur lors de l'ouverture du fichier %s \n", nom_fichier);
         exit(1);
     }
     // Enregistrer les données dans le fichier CSV
     fprintf(file, "Index,Occurence\n");  // Entête du CSV
-    for (unsigned int i = 0; i < taille; i++) {
+    for ( int i = 0; i < taille; i++) {
         fprintf(file, "%d,%d\n", i, tableau[i]);  // Index et Occurrence
     }
     // Fermer le fichier après l'enregistrement
     fclose(file);
-    log_printf("Succes ~ Les donnees generer_csv_index_occurence ont ete enregistrees dans le fichier %s\n", nom_fichier);
+    snprintf(message_log, sizeof(message_log), "Succes ~ Les donnees generer_csv_index_occurence ont ete enregistrees dans le fichier %s\n", nom_fichier);
+
+    // Passer le message formaté à log_printf
+    log_printf(message_log);
 }
 
 /*
@@ -325,7 +329,7 @@ void generer_csv_minO_maxO_ratio(long long max_occurence, long long min_occurenc
     FILE *file = fopen(nom_fichier, "w");
     if (file == NULL) {
         perror("Erreur lors de la création du fichier CSV");
-        log_printf( "Erreur ~ Erreur lors de la création du fichier CSV %s \n",nom_fichier);
+        log_printf("Erreur ~ Erreur lors de la création du fichier CSV %s \n", nom_fichier);
         exit(1);
     }
     // Enregistrer les statistiques dans le fichier CSV
@@ -333,8 +337,10 @@ void generer_csv_minO_maxO_ratio(long long max_occurence, long long min_occurenc
     fprintf(file, "%.2f,%lld,%lld\n", ratio, max_occurence, min_occurence);  // Valeurs calculées
     // Fermer le fichier après l'enregistrement
     fclose(file);
-    log_printf("Succes ~ Les donnees generer_csv_minO_maxO_ratio ont ete enregistrees dans le fichier %s\n", nom_fichier);
-}
+    snprintf(message_log, sizeof(message_log), "Succes ~ Les donnees generer_csv_minO_maxO_ratio ont ete enregistrees dans le fichier %s\n", nom_fichier);
+
+    // Passer le message formaté à log_printf
+    log_printf(message_log);}
 
 /*
  * Fonction : plier_tableau
@@ -365,7 +371,7 @@ int* plier_tableau(int* tableau, int taille, int taille_bloc, int* nouvelle_tail
     }
     // Vérification que la taille du tableau est un multiple de la taille des blocs
     if (taille % taille_bloc != 0) {
-        log_printf( "Erreur ~ la taille du tableau (%d) n'est pas un multiple de la taille des blocs (%d)\n",taille, taille_bloc);
+        log_printf("Erreur ~ la taille du tableau n'est pas un multiple de la taille des blocs )\n");
         exit(1);
     }
     // Calcul de la taille du tableau réduit
@@ -635,7 +641,9 @@ log_printf(message_log);
 
     int nbrClientTotalTraiter = 0;
     while (nbrClientTotalTraiter < nbrClientPrevus) {
-    log_printf("Info ~ Serveur en Attente de client... sur %s:%d\n", adresse_ip_serveur, port_serveur);
+        snprintf(message_log, sizeof(message_log),"Info ~ Serveur en Attente de client... sur %s:%d\n", adresse_ip_serveur, port_serveur);
+
+        log_printf(message_log);
 
 
     // Accepter une nouvelle connexion client
@@ -733,7 +741,12 @@ log_printf(message_log);
     log_printf("Succès ~ Pliage du tableau pour generer le fichier CSV reduit pour les Index,Occurences....\n");
 
     // Generer le fichier CSV pour les Index et Occurrences a partir du tableau plier
-    generer_csv_index_occurence(tableau_IPC, TAILLE_TABLEAU);
+    generer_csv_index_occurence(tableau_IPC, TAILLE_TABLEAU, "complet");
+
+    log_printf(" Info ~ Appuyer sur une touche pour generer le csv plier.... ");
+    getchar();
+    // Generer le fichier CSV pour les Index et Occurrences a partir du tableau plier
+    generer_csv_index_occurence(tableau_plie, nouvelle_taille, "plier");
 
 
     /*

@@ -32,13 +32,14 @@
 #include <sys/sem.h>
 #include <sys/wait.h>
 #include <sys/time.h>
+#include <time.h>
 #include <string.h>
 
-#define TAILLE_TABLEAU (1024) // Taille du tableau des occurences (2^28 éléments)
+#define TAILLE_TABLEAU (2<<28)  // Taille du tableau des occurences (2^28 éléments)
 #define NBR_PROCESSUS 6         // Nombre de processus
 #define NBR_CYCLES 10             // Nombre de cycles
-#define NBR_RANDOMS (100) // Nombres de nombres aléatoires à générer par cycle (10 milliards)
-#define SHM_KEY 0x44552          // Clé pour la mémoire partagée
+#define NBR_RANDOMS (1000000000LL) // Nombres aléatoires par cycle (10 milliard)
+#define SHM_KEY 0x874         // Clé pour la mémoire partagée
 
 
 // Variable pour stocker le message formater avec sprintf pour inclure des variables dans les logs afin d'avoir un log riche
