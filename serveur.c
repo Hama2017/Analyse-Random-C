@@ -39,10 +39,10 @@
 #include <regex.h>
 
 #define MAX_CLIENTS 100  // Le nombre maximum de clients dans la file d'attente du serveur
-#define TAILLE_TABLEAU (2<<28)  // Taille du tableau des occurences (2^28 éléments)
+#define TAILLE_TABLEAU (1<<28)  // Taille du tableau des occurences (2^28 éléments)
 #define NBR_PROCESSUS 6         // Nombre de processus
 #define NBR_CYCLES 10             // Nombre de cycles
-#define NBR_RANDOMS (1000000000LL) // Nombres aléatoires par cycle (10 milliard)
+#define NBR_RANDOMS (10000000000LL) // Nombres aléatoires par cycle (10 milliard)
 #define SHM_KEY 0x787       // Clé pour la mémoire partagée
 #define K 1024        // Taille d'un bloc pour le pliage du tableau d'occurence (pour tracer la courbe )
 
@@ -52,7 +52,7 @@ char message_log[600];
 
 // Décrémenter sémaphore (verrouiller)
 struct sembuf bloquer_semaphore = {0, -1, 0};
-// Incrémenter sémaphore (déverrouiller)
+// Incrémenter sémaphore (déverrouiller)nbr_total_rand_generer
 struct sembuf debloquer_semaphore = {0, 1, 0};
 
 // Le Ration entre le Max Occurence et Min Occurence

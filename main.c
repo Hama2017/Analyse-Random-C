@@ -79,12 +79,18 @@ int valider_port(int port) {
 }
 
 int main() {
-    system("clear");
+    int ret = system("clear");
+    if (ret != 0) {
+        perror("Erreur lors de l'exécution de la commande system");
+        return 1;
+    }
+
     int choix;
     char adresse_ip[16];
     int port;
     int nbrClientPrevus;
     char commande[256];
+
     afficherFichier("text/main/text_bienvenue.txt");
     printf("Veuillez choisir le programme que vous voulez lancer : \n");
     printf("Attention : Faudras compiler manuellement le programme main pour lancer les programmes \n sinon faudras changer les chemins d'execetion des programmes client & serveur dans main.c \n");
@@ -94,60 +100,108 @@ int main() {
     printf("2. Serveur\n");
     printf("   - Le programme serveur génère aussi des nombres aléatoires mais attend des clients pour synchroniser les données et faire des analyses.\n");
     printf("Entrez le numéro correspondant à votre choix : ");
-    scanf("%d", &choix);
+
+    if (scanf("%d", &choix) != 1) {
+        perror("Erreur de saisie lors du choix du programme");
+        return 1;
+    }
 
     if (choix == 1) {
         printf("Vous avez choisi le programme Client.\n");
         printf("Veuillez entrer l'adresse IP du serveur auquel le client va se connecter :\n");
-        scanf("%s", adresse_ip);
+
+        if (scanf("%s", adresse_ip) != 1) {
+            perror("Erreur de saisie lors de l'adresse IP du serveur");
+            return 1;
+        }
 
         while (!valider_ip(adresse_ip)) {
             printf("Adresse IP invalide. Veuillez entrer une adresse IP valide :\n");
-            scanf("%s", adresse_ip);
+            if (scanf("%s", adresse_ip) != 1) {
+                perror("Erreur de saisie lors de l'adresse IP du serveur");
+                return 1;
+            }
         }
 
         printf("Veuillez entrer le port du serveur :\n");
-        scanf("%d", &port);
+
+        if (scanf("%d", &port) != 1) {
+            perror("Erreur de saisie lors du port du serveur");
+            return 1;
+        }
 
         while (!valider_port(port)) {
             printf("Port invalide. Veuillez entrer un port valide (1-65535) :\n");
-            scanf("%d", &port);
+            if (scanf("%d", &port) != 1) {
+                perror("Erreur de saisie lors du port du serveur");
+                return 1;
+            }
         }
 
         snprintf(commande, sizeof(commande), "gcc -O3 client.c -o client && ./client %s:%d", adresse_ip, port);
-        system(commande);
+        ret = system(commande);
+        if (ret != 0) {
+            perror("Erreur lors de l'exécution de la commande system pour le client");
+            return 1;
+        }
+
     } else if (choix == 2) {
         printf("Vous avez choisi le programme Serveur.\n");
         printf("Veuillez entrer l'adresse IP sur laquelle le serveur doit écouter :\n");
-        scanf("%s", adresse_ip);
+
+        if (scanf("%s", adresse_ip) != 1) {
+            perror("Erreur de saisie lors de l'adresse IP du serveur");
+            return 1;
+        }
 
         while (!valider_ip(adresse_ip)) {
             printf("Adresse IP invalide. Veuillez entrer une adresse IP valide :\n");
-            scanf("%s", adresse_ip);
+            if (scanf("%s", adresse_ip) != 1) {
+                perror("Erreur de saisie lors de l'adresse IP du serveur");
+                return 1;
+            }
         }
 
-
         printf("Veuillez entrer le port sur lequel le serveur doit écouter :\n");
-        scanf("%d", &port);
+
+        if (scanf("%d", &port) != 1) {
+            perror("Erreur de saisie lors du port du serveur");
+            return 1;
+        }
 
         while (!valider_port(port)) {
             printf("Port invalide. Veuillez entrer un port valide (1-65535) :\n");
-            scanf("%d", &port);
+            if (scanf("%d", &port) != 1) {
+                perror("Erreur de saisie lors du port du serveur");
+                return 1;
+            }
         }
 
-
         printf("Veuillez entrer le nombre de clients à attendre (max 100) :\n");
-        scanf("%d", &nbrClientPrevus);
+
+        if (scanf("%d", &nbrClientPrevus) != 1) {
+            perror("Erreur de saisie lors du nombre de clients");
+            return 1;
+        }
 
         while (nbrClientPrevus < 1 || nbrClientPrevus > 100) {
             printf("Nombre de clients invalide. Veuillez entrer un nombre entre 1 et 100 :\n");
-            scanf("%d", &nbrClientPrevus);
+            if (scanf("%d", &nbrClientPrevus) != 1) {
+                perror("Erreur de saisie lors du nombre de clients");
+                return 1;
+            }
         }
 
         snprintf(commande, sizeof(commande), "gcc -O3 serveur.c -o serveur && ./serveur %s:%d %d", adresse_ip, port, nbrClientPrevus);
-        system(commande);
+        ret = system(commande);
+        if (ret != 0) {
+            perror("Erreur lors de l'exécution de la commande system pour le serveur");
+            return 1;
+        }
+
     } else {
         printf("Choix invalide, Veuillez relancer le programme et choisir un numéro valide\n");
+        return 1;
     }
 
     return 0;
