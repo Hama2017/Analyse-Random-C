@@ -83,17 +83,49 @@ CMakeFiles/projetSystemeComplet.dir/main.c.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling C source to assembly CMakeFiles/projetSystemeComplet.dir/main.c.s"
 	/Library/Developer/CommandLineTools/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /Users/hamaba/Desktop/projetc/etude_fonction_rand_c/main.c -o CMakeFiles/projetSystemeComplet.dir/main.c.s
 
+CMakeFiles/projetSystemeComplet.dir/serveur.c.o: CMakeFiles/projetSystemeComplet.dir/flags.make
+CMakeFiles/projetSystemeComplet.dir/serveur.c.o: /Users/hamaba/Desktop/projetc/etude_fonction_rand_c/serveur.c
+CMakeFiles/projetSystemeComplet.dir/serveur.c.o: CMakeFiles/projetSystemeComplet.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/hamaba/Desktop/projetc/etude_fonction_rand_c/cmake-build-debug/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Building C object CMakeFiles/projetSystemeComplet.dir/serveur.c.o"
+	/Library/Developer/CommandLineTools/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/projetSystemeComplet.dir/serveur.c.o -MF CMakeFiles/projetSystemeComplet.dir/serveur.c.o.d -o CMakeFiles/projetSystemeComplet.dir/serveur.c.o -c /Users/hamaba/Desktop/projetc/etude_fonction_rand_c/serveur.c
+
+CMakeFiles/projetSystemeComplet.dir/serveur.c.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing C source to CMakeFiles/projetSystemeComplet.dir/serveur.c.i"
+	/Library/Developer/CommandLineTools/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /Users/hamaba/Desktop/projetc/etude_fonction_rand_c/serveur.c > CMakeFiles/projetSystemeComplet.dir/serveur.c.i
+
+CMakeFiles/projetSystemeComplet.dir/serveur.c.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling C source to assembly CMakeFiles/projetSystemeComplet.dir/serveur.c.s"
+	/Library/Developer/CommandLineTools/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /Users/hamaba/Desktop/projetc/etude_fonction_rand_c/serveur.c -o CMakeFiles/projetSystemeComplet.dir/serveur.c.s
+
+CMakeFiles/projetSystemeComplet.dir/client.c.o: CMakeFiles/projetSystemeComplet.dir/flags.make
+CMakeFiles/projetSystemeComplet.dir/client.c.o: /Users/hamaba/Desktop/projetc/etude_fonction_rand_c/client.c
+CMakeFiles/projetSystemeComplet.dir/client.c.o: CMakeFiles/projetSystemeComplet.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/hamaba/Desktop/projetc/etude_fonction_rand_c/cmake-build-debug/CMakeFiles --progress-num=$(CMAKE_PROGRESS_3) "Building C object CMakeFiles/projetSystemeComplet.dir/client.c.o"
+	/Library/Developer/CommandLineTools/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/projetSystemeComplet.dir/client.c.o -MF CMakeFiles/projetSystemeComplet.dir/client.c.o.d -o CMakeFiles/projetSystemeComplet.dir/client.c.o -c /Users/hamaba/Desktop/projetc/etude_fonction_rand_c/client.c
+
+CMakeFiles/projetSystemeComplet.dir/client.c.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing C source to CMakeFiles/projetSystemeComplet.dir/client.c.i"
+	/Library/Developer/CommandLineTools/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /Users/hamaba/Desktop/projetc/etude_fonction_rand_c/client.c > CMakeFiles/projetSystemeComplet.dir/client.c.i
+
+CMakeFiles/projetSystemeComplet.dir/client.c.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling C source to assembly CMakeFiles/projetSystemeComplet.dir/client.c.s"
+	/Library/Developer/CommandLineTools/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /Users/hamaba/Desktop/projetc/etude_fonction_rand_c/client.c -o CMakeFiles/projetSystemeComplet.dir/client.c.s
+
 # Object files for target projetSystemeComplet
 projetSystemeComplet_OBJECTS = \
-"CMakeFiles/projetSystemeComplet.dir/main.c.o"
+"CMakeFiles/projetSystemeComplet.dir/main.c.o" \
+"CMakeFiles/projetSystemeComplet.dir/serveur.c.o" \
+"CMakeFiles/projetSystemeComplet.dir/client.c.o"
 
 # External object files for target projetSystemeComplet
 projetSystemeComplet_EXTERNAL_OBJECTS =
 
 projetSystemeComplet: CMakeFiles/projetSystemeComplet.dir/main.c.o
+projetSystemeComplet: CMakeFiles/projetSystemeComplet.dir/serveur.c.o
+projetSystemeComplet: CMakeFiles/projetSystemeComplet.dir/client.c.o
 projetSystemeComplet: CMakeFiles/projetSystemeComplet.dir/build.make
 projetSystemeComplet: CMakeFiles/projetSystemeComplet.dir/link.txt
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=/Users/hamaba/Desktop/projetc/etude_fonction_rand_c/cmake-build-debug/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Linking C executable projetSystemeComplet"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=/Users/hamaba/Desktop/projetc/etude_fonction_rand_c/cmake-build-debug/CMakeFiles --progress-num=$(CMAKE_PROGRESS_4) "Linking C executable projetSystemeComplet"
 	$(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/projetSystemeComplet.dir/link.txt --verbose=$(VERBOSE)
 
 # Rule to build all files generated by this target.

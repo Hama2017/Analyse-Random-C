@@ -41,77 +41,116 @@
 #define NBR_RANDOMS (10000000000LL) // Nombres aléatoires par cycle (10 milliard)
 #define SHM_KEY 0x874         // Clé pour la mémoire partagée
 
-
 // Variable pour stocker le message formater avec sprintf pour inclure des variables dans les logs afin d'avoir un log riche
 char message_log[600];
 
 struct sembuf bloquer_semaphore = {0, -1, 0}; // Décrémenter sémaphore (verrouiller)
 struct sembuf debloquer_semaphore = {0, 1, 0}; // Incrémenter sémaphore (déverrouiller)
 
-// Fonction pour afficher le contenu d'un fichier texte
-/*
- * Cette fonction ouvre le fichier spécifié, lit son contenu ligne par ligne et l'affiche à l'écran.
- */
-void afficherFichier(const char *nomFichier) {
-    FILE *file = fopen(nomFichier, "r");
-    if (file == NULL) {
-        perror("Erreur lors de l'ouverture du fichier");
-    }
-
-    // Lecture et affichage ligne par ligne
-    char line[256];
-    while (fgets(line, sizeof(line), file) != NULL) {
-        printf("%s", line);
-    }
-
-    fclose(file);
-}
-
 // Fonction pour obtenir l'heure actuelle sous forme de chaîne formatée
 /*
- * Cette fonction récupère l'heure actuelle du système et la formate sous la forme "[HH:MM:SS]".
+ * Cette fonction récupère l'heure actuelle du système et la formate
+ * sous la forme "[HH:MM:SS]".
+ *
+ * Paramètres :
+ * - buffer : Pointeur vers une chaîne où l'heure formatée sera stockée (type char*).
+ * - taille : Taille maximale du buffer (type size_t).
  */
 void obtenir_temps_actuel(char *buffer, size_t taille) {
+    // Temps brut du système
     time_t rawtime;
+    // Structure pour l'heure locale
     struct tm *timeinfo;
+    // Récupérer le temps actuel
     time(&rawtime);
+    // Convertir en heure locale
     timeinfo = localtime(&rawtime);
+    // Formater l'heure
     strftime(buffer, taille, "[%H:%M:%S]", timeinfo);
 }
 
 // Fonction de log qui écrit à la fois dans la console et dans un fichier
 /*
- * Cette fonction permet d'enregistrer des logs à la fois dans la console et dans un fichier texte.
- * Elle utilise un format spécifié par l'utilisateur et ajoute un horodatage à chaque message.
+ * Cette fonction permet d'enregistrer des logs à la fois dans la console
+ * et dans un fichier texte, avec horodatage.
+ *
+ * Paramètres :
+ * - format : Chaîne de formatage (type const char*).
+ * - ... : Arguments variables pour le formatage.
+ *
+ * Fonctionnement :
+ * - Ajout d'un horodatage à chaque message.
+ * - Affichage dans la console avec printf().
+ * - Écriture dans un fichier log situé dans "log/serveur/log.txt".
  */
 void log_printf(const char *format, ...) {
-    char temps_actuel[11]; // Buffer pour stocker l'heure formatée [HH:MM:SS]
+    // Buffer pour l'heure formatée [HH:MM:SS]
+    char temps_actuel[11];
     obtenir_temps_actuel(temps_actuel, sizeof(temps_actuel));
-    // Ouvrir le fichier en mode ajout
-    FILE *logfile = fopen("log/client/log.txt", "a");
+    // Ouvrir en mode ajout
+    FILE *logfile = fopen("log/serveur/log.txt", "a");
     if (logfile == NULL) {
         perror("Erreur lors de l'ouverture du fichier de log");
+        exit(1);
     }
-    // Initialisation de la liste des arguments variables
+    // Initialisation des arguments variables
     va_list args;
     va_start(args, format);
-    // Affichage du message sur la console
+    // Affichage dans la console
     printf("%s ", temps_actuel);
     vprintf(format, args);
-    // Écriture du message dans le fichier de log
+    // Écriture dans le fichier
     fprintf(logfile, "%s ", temps_actuel);
     vfprintf(logfile, format, args);
-    // Terminer la liste des arguments variables
+    // Terminer les arguments variables
     va_end(args);
     // Fermer le fichier
     fclose(logfile);
 }
 
+// Fonction pour afficher le contenu d'un fichier texte
+/*
+ * Cette fonction ouvre le fichier spécifié, lit son contenu ligne par ligne,
+ * et l'affiche à l'écran.
+ *
+ * Paramètres :
+ * - nom_fichier : Chemin du fichier à lire (type const char*).
+ */
+void afficherFichier(const char *nom_fichier) {
+    FILE *file = fopen(nom_fichier, "r");
+    if (file == NULL) {
+        perror("Erreur lors de l'ouverture du fichier");
+        log_printf("Erreur ~ Erreur lors de l'ouverture du fichier %s \n", nom_fichier);
+        exit(1);
+    }
+    // Buffer pour lire les lignes du fichier
+    char line[256];
+    while (fgets(line, sizeof(line), file) != NULL) {
+        // Affichage ligne par ligne
+        printf("%s", line);
+    }
+    // Fermeture du fichier
+    fclose(file);
+}
+
 // Fonction pour générer et synchroniser les nombres aléatoires pour les processus
 /*
- * Cette fonction génère des nombres aléatoires et les synchronise à l'aide d'un sémaphore.
- * Elle crée un tableau local pour chaque processus, génère des nombres aléatoires,
- * et les ajoute au tableau IPC partagé, tout en respectant la synchronisation entre les processus.
+ * Cette fonction génère des nombres aléatoires, met à jour un tableau partagé
+ * synchronisé avec un sémaphore, et mesure le temps total de l'opération.
+ *
+ * Paramètres :
+ * - process_id : Identifiant du processus (type int).
+ * - tableau_IPC : Tableau partagé à mettre à jour (type int*).
+ * - sem_id : Identifiant du sémaphore pour la synchronisation (type int).
+ *
+ * Fonctionnement :
+ * - Un tableau local est alloué dynamiquement et initialisé.
+ * - À chaque cycle, des nombres aléatoires sont générés et stockés
+ *   dans le tableau local.
+ * - Le tableau global est mis à jour en utilisant un verrou global
+ *   (granularité grossière).
+ * - Le temps total écoulé est mesuré et enregistré.
+ * - La mémoire allouée pour le tableau local est libérée à la fin.
  */
 void generer_synchroniser_randoms(int process_id, int *tableau_IPC, int sem_id) {
     // Allocation dynamique de mémoire pour le tableau local
@@ -181,7 +220,6 @@ void generer_synchroniser_randoms(int process_id, int *tableau_IPC, int sem_id) 
     // Libération de la mémoire allouée pour le tableau local
     free(tableau_local);
 }
-
 
 int main(int argc, char *argv[]) {
 
@@ -447,16 +485,13 @@ int main(int argc, char *argv[]) {
     log_printf(message_log);
 
 
-
     /*
      * PARTIE 5 - Nettoyage des ressources
      * Ici, nous libérons les ressources allouées :
      * mémoire partagée, sémaphore, et fermeture de la socket.
      */
 
-
     log_printf("Info ~ Nettoyage des ressources... \n");
-
 
     shmdt(tableau_IPC); // Détachement de la mémoire partagée
     shmctl(shm_id, IPC_RMID, NULL); // Suppression de la mémoire partagée
@@ -477,7 +512,6 @@ int main(int argc, char *argv[]) {
     printf("\n\n");
     afficherFichier("text/client/text_fin.txt");
     printf("\n\n");
-
 
     // Fin du programme client
 

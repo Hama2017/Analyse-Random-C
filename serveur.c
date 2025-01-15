@@ -44,8 +44,6 @@
 #define NBR_CYCLES 10             // Nombre de cycles
 #define NBR_RANDOMS (10000000000LL) // Nombres aléatoires par cycle (10 milliard)
 #define SHM_KEY 0x787       // Clé pour la mémoire partagée
-#define K 1024        // Taille d'un bloc pour le pliage du tableau d'occurence (pour tracer la courbe )
-
 
 // Variable pour stocker le message formater avec sprintf pour inclure des variables dans les logs afin d'avoir un log riche
 char message_log[600];
@@ -62,17 +60,24 @@ long long max_occurence=0;
 // L'occurence la plus petite
 long long min_occurence=0;
 
-// Le nombre de clients a traiter prevus par le serveur
-int nbrClientPrevus=0;
+/*  Le nombre de clients a traiter prevus par le serveur
+*  Pour faire l'etude ont avais utiliser nous 19 clients pour nbrClientPrevus car ont a utiliser 10 ordinateurs de la salle wifi  en memme temps
+*  Avec les parametres suivant le client et le serveur genere chacun 60 milliard
+*   10 + 1 = 11 * 60 milliard = 660 milliards
+*  pour combler le reste ont a relancer le programme client sur 9 ordinateurs
+*  9 * 60 milliard = 5400 milliard
+*  5400 milliard + 660 milliard = 12000 milliard
+*  En tout avec les 19 clients ont genre 12000 milliard de nombre aleatoire rapidement
+int nbrClientPrevus=1;
+*/
+
 // Le nombre de clients traiter  par le serveur
 int nbrClientTotalTraiter=0;
 
 //nbr_total_rand_generer = 600 milliard pour notre cas
 // Le nombre total de nombres aléatoires à générer par tout les clients a traiter + le serveur
-// A Noter on aurez mit 1200 milliard si ont avait 1 client + le serveur
-// Pour notre cas ont a 5 client + le serveur  sa fait  6 * 600 milliard sa fait au total 3600 milliard
+// 1200 milliard si le programme client et serveur genere chacun 600 milliard  (1 client + le serveur)
 long long nbr_total_rand_generer  = 1200000000000LL;
-
 
 // Fonction pour obtenir l'heure actuelle sous forme de chaîne formatée
 /*
@@ -340,68 +345,8 @@ void generer_csv_minO_maxO_ratio(long long max_occurence, long long min_occurenc
     snprintf(message_log, sizeof(message_log), "Succes ~ Les donnees generer_csv_minO_maxO_ratio ont ete enregistrees dans le fichier %s\n", nom_fichier);
 
     // Passer le message formaté à log_printf
-    log_printf(message_log);}
-
-/*
- * Fonction : plier_tableau
- * ------------------------
- * Cette fonction permet de réduire un tableau en pliant ses éléments en blocs de taille fixe.
- * Chaque bloc est formé en sommant les éléments correspondants du tableau d'entrée.
- *
- * Paramètres :
- * - tableau : pointeur vers le tableau à plier.
- * - taille : taille totale du tableau d'entrée.
- * - taille_bloc : nombre d'éléments par bloc pour effectuer le pliage.
- * - nouvelle_taille : pointeur pour stocker la taille du tableau réduit après pliage.
- *
- * Retourne :
- * - Un pointeur vers le tableau plié (tableau réduit) si l'opération réussit.
- * - NULL si une erreur survient (ex. : paramètres invalides ou problème de mémoire).
- *
- * Remarques :
- * - La taille du tableau d'entrée (taille) doit être un multiple de taille_bloc.
- * - La mémoire pour le tableau réduit est allouée dynamiquement, l'utilisateur doit la libérer après usage.
- */
-
-int* plier_tableau(int* tableau, int taille, int taille_bloc, int* nouvelle_taille) {
-    // Vérification des paramètres d'entrée
-    if (!tableau || taille <= 0 || taille_bloc <= 0 || !nouvelle_taille) {
-        log_printf("Erreur ~ Paramètres invalides pour la fonction plier_tableau \n");
-        exit(1);
+    log_printf(message_log);
     }
-    // Vérification que la taille du tableau est un multiple de la taille des blocs
-    if (taille % taille_bloc != 0) {
-        log_printf("Erreur ~ la taille du tableau n'est pas un multiple de la taille des blocs )\n");
-        exit(1);
-    }
-    // Calcul de la taille du tableau réduit
-    *nouvelle_taille = taille / taille_bloc;
-    // Allocation mémoire pour le tableau réduit
-    int* tableau_reduit = malloc(*nouvelle_taille * sizeof(int));
-    if (!tableau_reduit) {
-        perror("Erreur d'allocation mémoire pour le tableau réduit");
-        log_printf("Erreur ~ Erreur d'allocation mémoire pour le tableau réduit");
-        exit(1);
-    }
-    /*
-     * Processus de pliage :
-     * Le pliage consiste à diviser le tableau initial en blocs de taille taille_bloc.
-     * Chaque bloc est parcouru, et ses éléments sont additionnés pour produire une valeur unique.
-     * Cette valeur est insérée dans le tableau réduit.
-     */
-    for (int i = 0; i < *nouvelle_taille; i++) {
-        // Somme des éléments dans le bloc courant
-        int somme = 0;
-        for (int j = 0; j < taille_bloc; j++) {
-            // Accumulation des valeurs du bloc
-            somme += tableau[i * taille_bloc + j];
-        }
-        // Stockage de la somme dans le tableau réduit
-        tableau_reduit[i] = somme;
-    }
-    // Retourne le tableau réduit contenant les sommes des blocs
-    return tableau_reduit;
-}
 
 /*
  * Fonction : trouver_max_occurence
@@ -527,11 +472,9 @@ if (nbrClientPrevus <= 0 || nbrClientPrevus > 100) {
     return 1;
 }
 
-    snprintf(message_log, sizeof(message_log),
-               "Succès ~ Format valide. Adresse IP : %s, Port : %d, Nombre de clients : %d\n", adresse_ip_serveur, port_serveur, nbrClientPrevus);
+    snprintf(message_log, sizeof(message_log),"Succès ~ Format valide. Adresse IP : %s, Port : %d, Nombre de clients : %d\n", adresse_ip_serveur, port_serveur, nbrClientPrevus);
     log_printf(message_log);
-log_printf(message_log);
-
+    log_printf(message_log);
 
     /*
      * PARTIE 1 - Initialisation et affichage
@@ -732,21 +675,11 @@ log_printf(message_log);
 
     log_printf("Info ~ Generation du fichier CSV pour les statistiques...\n");
 
-    // Generer le fichier CSV  contenant le ratio, le minOccurence et le maxOccurence 
+    // Generer le fichier CSV  contenant le ratio, le minOccurence et le maxOccurence
     generer_csv_minO_maxO_ratio(min_occurence,max_occurence,ratio);
 
-    // Pliage pour generer un tableau reduit dans le but de pouvoir construire la courbe des occurences
-    int nouvelle_taille;
-    int *tableau_plie = plier_tableau(tableau_IPC, TAILLE_TABLEAU, K, &nouvelle_taille);
-    log_printf("Succès ~ Pliage du tableau pour generer le fichier CSV reduit pour les Index,Occurences....\n");
-
-    // Generer le fichier CSV pour les Index et Occurrences a partir du tableau plier
+    // Generer le fichier CSV pour les Index et Occurrences
     generer_csv_index_occurence(tableau_IPC, TAILLE_TABLEAU, "complet");
-
-    log_printf(" Info ~ Appuyer sur une touche pour generer le csv plier.... ");
-    getchar();
-    // Generer le fichier CSV pour les Index et Occurrences a partir du tableau plier
-    generer_csv_index_occurence(tableau_plie, nouvelle_taille, "plier");
 
 
     /*
@@ -757,7 +690,6 @@ log_printf(message_log);
 
     log_printf("Info ~ Liberation de la memoire ....\n");
 
-    free(tableau_plie);
     shmdt(tableau_IPC);
     shmctl(shm_id, IPC_RMID, NULL);
     semctl(sem_id, 0, IPC_RMID);

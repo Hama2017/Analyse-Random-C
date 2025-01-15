@@ -129,6 +129,30 @@ projetSystemeComplet/fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/projetSystemeComplet.dir/build.make CMakeFiles/projetSystemeComplet.dir/build
 .PHONY : projetSystemeComplet/fast
 
+client.o: client.c.o
+.PHONY : client.o
+
+# target to build an object file
+client.c.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/projetSystemeComplet.dir/build.make CMakeFiles/projetSystemeComplet.dir/client.c.o
+.PHONY : client.c.o
+
+client.i: client.c.i
+.PHONY : client.i
+
+# target to preprocess a source file
+client.c.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/projetSystemeComplet.dir/build.make CMakeFiles/projetSystemeComplet.dir/client.c.i
+.PHONY : client.c.i
+
+client.s: client.c.s
+.PHONY : client.s
+
+# target to generate assembly for a file
+client.c.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/projetSystemeComplet.dir/build.make CMakeFiles/projetSystemeComplet.dir/client.c.s
+.PHONY : client.c.s
+
 main.o: main.c.o
 .PHONY : main.o
 
@@ -153,6 +177,30 @@ main.c.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/projetSystemeComplet.dir/build.make CMakeFiles/projetSystemeComplet.dir/main.c.s
 .PHONY : main.c.s
 
+serveur.o: serveur.c.o
+.PHONY : serveur.o
+
+# target to build an object file
+serveur.c.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/projetSystemeComplet.dir/build.make CMakeFiles/projetSystemeComplet.dir/serveur.c.o
+.PHONY : serveur.c.o
+
+serveur.i: serveur.c.i
+.PHONY : serveur.i
+
+# target to preprocess a source file
+serveur.c.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/projetSystemeComplet.dir/build.make CMakeFiles/projetSystemeComplet.dir/serveur.c.i
+.PHONY : serveur.c.i
+
+serveur.s: serveur.c.s
+.PHONY : serveur.s
+
+# target to generate assembly for a file
+serveur.c.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/projetSystemeComplet.dir/build.make CMakeFiles/projetSystemeComplet.dir/serveur.c.s
+.PHONY : serveur.c.s
+
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -162,9 +210,15 @@ help:
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
 	@echo "... projetSystemeComplet"
+	@echo "... client.o"
+	@echo "... client.i"
+	@echo "... client.s"
 	@echo "... main.o"
 	@echo "... main.i"
 	@echo "... main.s"
+	@echo "... serveur.o"
+	@echo "... serveur.i"
+	@echo "... serveur.s"
 .PHONY : help
 
 
