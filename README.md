@@ -1,92 +1,198 @@
-# etude_fonction_rand_c
+# Étude Fonction rand()
 
+Ce projet analyse le comportement de la fonction rand() en C à travers une architecture distribuée client-serveur. Il permet de générer et d'analyser une grande quantité de nombres aléatoires (jusqu'à 12000 milliards dans nos tests) en utilisant plusieurs ordinateurs en réseau.
 
+## 🌟 Caractéristiques
 
-## Getting started
+### Architecture Distribuée
+- Architecture client-serveur pour la distribution des calculs
+- Support de multiples clients simultanés (testé avec 19 clients)
+- Communication réseau via sockets TCP/IP
+- Capacité de traitement massif (12000 milliards de nombres testés)
 
-To make it easy for you to get started with GitLab, here's a list of recommended next steps.
+### Interface Principale
+- Menu interactif pour lancer le client ou le serveur
+- Validation automatique des adresses IP et ports
+- Compilation automatique avec optimisation (-O3)
+- Gestion robuste des erreurs de saisie
+- Messages d'interface personnalisables via fichiers texte
 
-Already a pro? Just edit this README.md and make it your own. Want to make it easy? [Use the template at the bottom](#editing-this-readme)!
+### Performance
+- Architecture multi-processus (6 processus par instance)
+- Synchronisation via sémaphores
+- Gestion de mémoire partagée (IPC)
+- Traitement parallèle sur plusieurs machines
 
-## Add your files
+### Analyse & Statistiques
+- Génération de fichiers CSV pour l'analyse
+- Calcul des occurrences minimum et maximum
+- Analyse des ratios de distribution
+- Visualisation des données
 
-- [ ] [Create](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#create-a-file) or [upload](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#upload-a-file) files
-- [ ] [Add files using the command line](https://docs.gitlab.com/ee/gitlab-basics/add-file.html#add-a-file-using-the-command-line) or push an existing Git repository with the following command:
+## 📋 Prérequis
+
+- Système d'exploitation Linux/Unix
+- Compilateur GCC
+- Réseau local pour le mode distribué
+
+## 🛠️ Installation
+
+1. Clonez le dépôt :
+```bash
+git clone https://github.com/Hama2017/Analyse-Random-C
+cd Analyse-Random-C
+```
+
+2. Compilez les programmes :
+```bash
+gcc -o main main.c
+```
+
+## 💻 Utilisation
+
+1. Lancez le programme principal :
+```bash
+./main
+```
+
+2. Suivez les instructions du menu pour :
+    - Lancer un serveur en spécifiant l'adresse IP, le port et le nombre de clients
+    - Ou lancer un client en spécifiant l'adresse IP et le port du serveur
+
+### Configuration manuelle (alternative)
+Si vous préférez compiler et exécuter les programmes individuellement :
+
+1. Pour le serveur :
+```bash
+gcc -o server server.c 
+./server [adresseIP:port] [nombreClients]
+# Exemple : ./server 127.0.0.1:8080 19
+```
+
+2. Pour le client :
+```bash
+gcc -o client client.c 
+./client [adresseIP:port]
+# Exemple : ./client 127.0.0.1:8080
+```
+
+## 🔧 Configuration
+
+### Paramètres Client
+```c
+#define TAILLE_TABLEAU (1<<28)  // Taille du tableau des occurrences
+#define NBR_PROCESSUS 6         // Nombre de processus
+#define NBR_CYCLES 10          // Nombre de cycles
+#define NBR_RANDOMS (10000000000LL) // Nombres aléatoires par cycle
+```
+
+### Paramètres Serveur
+```c
+int nbrClientPrevus = 1;      // Nombre de clients à attendre
+long long nbr_total_rand_generer = 1200000000000LL; // Nombre total de nombres à générer
+```
+
+## 📊 Structure du Projet
 
 ```
-cd existing_repo
-git remote add origin https://www-apps.univ-lehavre.fr/forge/bh243413/etude_fonction_rand_c.git
-git branch -M main
-git push -uf origin main
+.
+|__ main.c                # Programme principal (menu interactif)
+├── server.c              # Code source du serveur
+├── client.c              # Code source du client
+├── log/                  # Dossiers des logs
+│   ├── server/
+│   │   └── log.txt      # Logs serveur
+│   └── client/
+│       └── log.txt      # Logs client
+├── CSV/                  # Fichiers de données générés
+│   ├── donnees_index_occurence.csv
+│   └── donnees_ratio_max_min.csv
+└── text/                 # Messages d'interface
+    ├── main/
+    │   └── text_bienvenue.txt
+    ├── server/
+    │   ├── text_bienvenue.txt
+    │   └── text_fin.txt
+    └── client/
+        ├── text_bienvenue.txt
+        └── text_fin.txt
 ```
 
-## Integrate with your tools
+## 🔍 Fonctionnement
 
-- [ ] [Set up project integrations](https://www-apps.univ-lehavre.fr/forge/bh243413/etude_fonction_rand_c/-/settings/integrations)
+### Programme Principal (main)
+1. **Interface**
+    - Affichage du menu de sélection
+    - Validation des entrées utilisateur
+    - Compilation automatique des programmes
 
-## Collaborate with your team
+2. **Configuration**
+    - Validation des adresses IP
+    - Vérification des ports (1-65535)
+    - Limitation du nombre de clients (1-100)
 
-- [ ] [Invite team members and collaborators](https://docs.gitlab.com/ee/user/project/members/)
-- [ ] [Create a new merge request](https://docs.gitlab.com/ee/user/project/merge_requests/creating_merge_requests.html)
-- [ ] [Automatically close issues from merge requests](https://docs.gitlab.com/ee/user/project/issues/managing_issues.html#closing-issues-automatically)
-- [ ] [Enable merge request approvals](https://docs.gitlab.com/ee/user/project/merge_requests/approvals/)
-- [ ] [Automatically merge when pipeline succeeds](https://docs.gitlab.com/ee/user/project/merge_requests/merge_when_pipeline_succeeds.html)
+### Serveur
+1. **Initialisation**
+    - Configuration du socket serveur
+    - Création de la mémoire partagée et des sémaphores
+    - Attente des connexions clients
 
-## Test and Deploy
+2. **Traitement**
+    - Réception des données des clients
+    - Synchronisation des tableaux d'occurrences
+    - Génération des statistiques globales
 
-Use the built-in continuous integration in GitLab.
+3. **Analyse**
+    - Calcul des occurrences min/max
+    - Génération des fichiers CSV
+    - Production des ratios de distribution
 
-- [ ] [Get started with GitLab CI/CD](https://docs.gitlab.com/ee/ci/quick_start/index.html)
-- [ ] [Analyze your code for known vulnerabilities with Static Application Security Testing(SAST)](https://docs.gitlab.com/ee/user/application_security/sast/)
-- [ ] [Deploy to Kubernetes, Amazon EC2, or Amazon ECS using Auto Deploy](https://docs.gitlab.com/ee/topics/autodevops/requirements.html)
-- [ ] [Use pull-based deployments for improved Kubernetes management](https://docs.gitlab.com/ee/user/clusters/agent/)
-- [ ] [Set up protected environments](https://docs.gitlab.com/ee/ci/environments/protected_environments.html)
+### Client
+1. **Génération**
+    - Création des processus de génération
+    - Production des nombres aléatoires
+    - Synchronisation locale via sémaphores
 
-***
+2. **Communication**
+    - Connexion au serveur
+    - Envoi des données
+    - Nettoyage des ressources
 
-# Editing this README
+## 📝 Logs
 
-When you're ready to make this README your own, just edit this file and use the handy template below (or feel free to structure it however you want - this is just a starting point!). Thank you to [makeareadme.com](https://www.makeareadme.com/) for this template.
+Le système maintient des logs détaillés pour le serveur et le client :
+- Horodatage de chaque opération
+- Suivi des connexions réseau
+- Statistiques de génération
+- Erreurs et succès
 
-## Suggestions for a good README
-Every project is different, so consider which of these sections apply to yours. The sections used in the template are suggestions for most open source projects. Also keep in mind that while a README can be too long and detailed, too long is better than too short. If you think your README is too long, consider utilizing another form of documentation rather than cutting out information.
+## 📊 Fichiers CSV Générés
 
-## Name
-Choose a self-explaining name for your project.
+1. **donnees_index_occurence.csv**
+    - Index des nombres générés
+    - Nombre d'occurrences pour chaque valeur
 
-## Description
-Let people know what your project can do specifically. Provide context and add a link to any reference visitors might be unfamiliar with. A list of Features or a Background subsection can also be added here. If there are alternatives to your project, this is a good place to list differentiating factors.
+2. **donnees_ratio_max_min.csv**
+    - Ratio de distribution
+    - Valeurs maximales et minimales
+    - Statistiques globales
 
-## Badges
-On some READMEs, you may see small images that convey metadata, such as whether or not all the tests are passing for the project. You can use Shields to add some to your README. Many services also have instructions for adding a badge.
+## 👥 Auteurs
 
-## Visuals
-Depending on what you are making, it can be a good idea to include screenshots or even a video (you'll frequently see GIFs rather than actual videos). Tools like ttygif can help, but check out Asciinema for a more sophisticated method.
+- BA Hamadou
+- BA Salimatouh Maliah
 
-## Installation
-Within a particular ecosystem, there may be a common way of installing things, such as using Yarn, NuGet, or Homebrew. However, consider the possibility that whoever is reading your README is a novice and would like more guidance. Listing specific steps helps remove ambiguity and gets people to using your project as quickly as possible. If it only runs in a specific context like a particular programming language version or operating system or has dependencies that have to be installed manually, also add a Requirements subsection.
+## 📅 Date de création
 
-## Usage
-Use examples liberally, and show the expected output if you can. It's helpful to have inline the smallest example of usage that you can demonstrate, while providing links to more sophisticated examples if they are too long to reasonably include in the README.
+15 Décembre 2024
 
-## Support
-Tell people where they can go to for help. It can be any combination of an issue tracker, a chat room, an email address, etc.
+## ⚠️ Notes importantes
 
-## Roadmap
-If you have ideas for releases in the future, it is a good idea to list them in the README.
+- Le programme principal doit être exécuté depuis la racine du projet
+- Le programme a été testé avec succès sur 19 clients simultanés
+- Capacité de génération de 12000 milliards de nombres aléatoires
+- Utilisation optimale sur un réseau local pour les performances
 
-## Contributing
-State if you are open to contributions and what your requirements are for accepting them.
+## 📄 Licence
 
-For people who want to make changes to your project, it's helpful to have some documentation on how to get started. Perhaps there is a script that they should run or some environment variables that they need to set. Make these steps explicit. These instructions could also be useful to your future self.
-
-You can also document commands to lint the code or run tests. These steps help to ensure high code quality and reduce the likelihood that the changes inadvertently break something. Having instructions for running tests is especially helpful if it requires external setup, such as starting a Selenium server for testing in a browser.
-
-## Authors and acknowledgment
-Show your appreciation to those who have contributed to the project.
-
-## License
-For open source projects, say how it is licensed.
-
-## Project status
-If you have run out of energy or time for your project, put a note at the top of the README saying that development has slowed down or stopped completely. Someone may choose to fork your project or volunteer to step in as a maintainer or owner, allowing your project to keep going. You can also make an explicit request for maintainers.
+Ce projet est distribué sous licence MIT. Voir le fichier `LICENSE` pour plus de détails.

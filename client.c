@@ -214,7 +214,9 @@ void generer_synchroniser_randoms(int process_id, int *tableau_IPC, int sem_id) 
 
     // Affichage du temps total écoulé pour la génération et la synchronisation
 
-    snprintf(message_log, sizeof(message_log),"Succes ~ Processus %d : Génération et synchronisation terminées en %.2f secondes\n", process_id,elapsed_time);
+    snprintf(message_log, sizeof(message_log),
+             "Succes ~ Processus %d : Génération et synchronisation terminées en %.2f secondes\n", process_id,
+             elapsed_time);
     log_printf(message_log);
 
     // Libération de la mémoire allouée pour le tableau local
@@ -222,7 +224,6 @@ void generer_synchroniser_randoms(int process_id, int *tableau_IPC, int sem_id) 
 }
 
 int main(int argc, char *argv[]) {
-
     /*
  * PARTIE 0 - Lancement du programme Client
  * Il prend en entrée deux arguments :
@@ -481,7 +482,8 @@ int main(int argc, char *argv[]) {
         perror("Erreur lors de l'envoi du tableau");
     }
 
-    snprintf(message_log, sizeof(message_log), "Succes ~ Tableau IPC envoyées avec succès au serveur %s \n",adresse_ip_serveur);
+    snprintf(message_log, sizeof(message_log), "Succes ~ Tableau IPC envoyées avec succès au serveur %s \n",
+             adresse_ip_serveur);
     log_printf(message_log);
 
 
