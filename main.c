@@ -9,7 +9,7 @@
  * Le code a été réalisé par BA Hamadou et BA Salimatouh Maliah.
  * 15 Décembre 2024.
  * Le projet porte le nom "Etude Fonction rand".
- * Lien du dépôt GitHub : https://github.com/Hama2017/Analyse-Random-C
+ * Lien du dépôt GitHub : https://www-apps.univ-lehavre.fr/forge/bh243413/etude_fonction_rand_c
  *********************************************************************
  * Bibliothèques utilisées :
  * - <stdarg.h> : Permet de gérer des arguments variables pour la fonction de log.

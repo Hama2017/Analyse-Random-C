@@ -39,7 +39,7 @@ Ce projet analyse le comportement de la fonction rand() en C à travers une arch
 
 1. Clonez le dépôt :
 ```bash
-git clone https://github.com/Hama2017/Analyse-Random-C
+git clone https://www-apps.univ-lehavre.fr/forge/bh243413/etude_fonction_rand_c
 cd Analyse-Random-C
 ```
 
