@@ -177,10 +177,9 @@ Le système maintient des logs détaillés pour le serveur et le client :
     - Valeurs maximales et minimales
     - Statistiques globales
 
-## 👥 Auteurs
+## 👥 Auteur
 
 - BA Hamadou
-- BA Salimatouh Maliah
 
 ## 📅 Date de création
 
