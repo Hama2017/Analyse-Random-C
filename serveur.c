@@ -5,7 +5,7 @@
  * reçoit leurs tableaux via un socket (Communication TCP/IP) et les synchronise avec son propre tableau.
  * Il effectue ensuite des calculs statistiques et export de donnees en csv.
  ********************************************************************
- * Le code a été réalisé par BA Hamadou et BA Salimatouh Maliah.
+ * Le code a été réalisé par BA Hamadou.
  * 15 Décembre 2024.
  * Le projet porte le nom "Etude Fonction rand".
  * Lien du dépôt GitHub : https://www-apps.univ-lehavre.fr/forge/bh243413/etude_fonction_rand_c
