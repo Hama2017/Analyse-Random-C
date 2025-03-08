@@ -6,7 +6,7 @@
  * tandis que le serveur génère également des nombres aléatoires, attend des connexions de clients,
  * synchronise les données reçues, effectue des analyses et arrête le programme.
  ********************************************************************
- * Le code a été réalisé par BA Hamadou et BA Salimatouh Maliah.
+ * Le code a été réalisé par BA Hamadou.
  * 15 Décembre 2024.
  * Le projet porte le nom "Etude Fonction rand".
  * Lien du dépôt GitHub : https://www-apps.univ-lehavre.fr/forge/bh243413/etude_fonction_rand_c
