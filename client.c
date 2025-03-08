@@ -4,7 +4,7 @@
  * Description : Ce programme génère et synchronise les occurrences des nombres aléatoires dans un tableau en IPC (mémoire partagée)
  * et envoie le tableau de l'IPC à un serveur pour traitement via un socket.
  ********************************************************************
- * Le code a été réalisé par BA Hamadou et BA Salimatouh Maliah.
+ * Le code a été réalisé par BA Hamadou.
  * 15 Décembre 2024.
  * Le projet porte le nom "Etude Fonction rand".
  * Lien du dépôt GitHub : https://www-apps.univ-lehavre.fr/forge/bh243413/etude_fonction_rand_c
